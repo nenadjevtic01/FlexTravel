@@ -1,0 +1,83 @@
+:host {
+  position: relative;
+  display: block;
+  container-type: inline-size;
+}
+.compare {
+  position: absolute;
+  z-index: 1;
+  left: 12px;
+  top: calc(100cqw * 10 / 16 - 44px);
+}
+.trip {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+.trip:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow);
+}
+.image {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background: var(--color-primary-soft);
+}
+.image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.agency {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  background: var(--color-overlay);
+}
+.offer {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  background: var(--color-accent);
+  color: #fff;
+}
+.seats {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+}
+h3 {
+  margin: 4px 0 6px;
+  font-size: 1.2rem;
+}
+.more-dates {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+.when {
+  font-size: 0.88rem;
+  margin-bottom: 12px;
+}
+.bottom {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.price {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+.price strong {
+  font-size: 1.35rem;
+  color: var(--color-accent);
+}

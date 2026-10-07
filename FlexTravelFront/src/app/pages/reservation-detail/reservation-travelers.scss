@@ -1,0 +1,48 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.head,
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.actions {
+  justify-content: flex-start;
+}
+h3,
+p {
+  margin: 0;
+}
+.list {
+  margin: 0;
+  padding-left: 20px;
+}
+.list li {
+  padding: 3px 0;
+}
+.list .small {
+  margin-left: 6px;
+}
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 150px;
+  gap: 8px;
+}
+.row .input {
+  padding: 7px 10px;
+}
+.small {
+  font-size: 0.82rem;
+}
+.alert {
+  margin: 0;
+}
+@media (max-width: 560px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

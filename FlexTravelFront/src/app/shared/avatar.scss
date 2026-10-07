@@ -1,0 +1,20 @@
+:host {
+  display: inline-flex;
+  flex: none;
+}
+img,
+.initial {
+  border-radius: 50%;
+}
+img {
+  object-fit: cover;
+  background: var(--color-primary-soft);
+}
+.initial {
+  display: grid;
+  place-items: center;
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: 700;
+  line-height: 1;
+}

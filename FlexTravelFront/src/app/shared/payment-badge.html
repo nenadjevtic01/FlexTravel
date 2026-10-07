@@ -1,0 +1,9 @@
+@let p = payment();
+<span
+  class="badge"
+  [class.badge-success]="p.status === 'Paid' || p.status === 'Settled'"
+  [class.badge-danger]="p.isOverdue || p.status === 'Refund due'"
+  [title]="title()"
+>
+  💶 {{ p.status }}{{ p.isOverdue ? ' · overdue' : '' }}
+</span>

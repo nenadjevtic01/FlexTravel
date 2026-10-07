@@ -1,0 +1,129 @@
+<div class="container page">
+  <header class="page-header">
+    <span class="eyebrow">Book your holiday</span>
+    <h1>Trips</h1>
+    <p class="muted">
+      Package trips from our partner agencies: transport, guided program and a hotel of your choice.
+    </p>
+  </header>
+
+  <div class="card filters">
+    <div class="field destination">
+      <label for="destination">Destination</label>
+      <select id="destination" class="select" (change)="setDestination($any($event.target).value)">
+        <option value="">Anywhere</option>
+        @if (destinations.hasValue()) {
+          @for (d of destinations.value(); track d.id) {
+            <option [value]="d.id" [selected]="filters.destinationId() === d.id">
+              {{ d.name }}, {{ d.country }} ({{ d.trips }})
+            </option>
+          }
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label for="from">Departure from</label>
+      <input
+        id="from"
+        class="input"
+        type="date"
+        [min]="today"
+        [value]="filters.dateFrom()"
+        (change)="setDateFrom($any($event.target).value)"
+      />
+    </div>
+    <div class="field">
+      <label for="to">Departure until</label>
+      <input
+        id="to"
+        class="input"
+        type="date"
+        [min]="filters.dateFrom() || today"
+        [value]="filters.dateTo()"
+        (change)="setDateTo($any($event.target).value)"
+      />
+    </div>
+    <div class="field">
+      <label for="travelers">Travelers</label>
+      <select id="travelers" class="select" (change)="setTravelers($any($event.target).value)">
+        <option value="">Any</option>
+        @for (n of travelerOptions; track n) {
+          <option [value]="n" [selected]="filters.travelers() === n">{{ n }}</option>
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label for="price">Max price / person</label>
+      <select id="price" class="select" (change)="setMaxPrice($any($event.target).value)">
+        <option value="">Any</option>
+        @for (p of priceOptions; track p) {
+          <option [value]="p" [selected]="filters.maxPrice() === p">{{ formatMoney(p) }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  @if (trips.error(); as error) {
+    <div class="state">
+      <h3>Trips could not be loaded</h3>
+      <p>{{ errorText(error) }}</p>
+      <button class="btn btn-secondary" (click)="trips.reload()">Try again</button>
+    </div>
+  } @else if (trips.hasValue()) {
+    @let result = trips.value();
+    <div class="results">
+      <p class="muted">
+        <strong>{{ result.totalCount }}</strong> {{ result.totalCount === 1 ? 'trip' : 'trips' }}
+        @if (summary()) {
+          {{ summary() }}
+        }
+        · <button class="link" (click)="reset()">clear filters</button>
+      </p>
+      <button
+        type="button"
+        class="chip deals"
+        [class.active]="filters.deals()"
+        [attr.aria-pressed]="filters.deals()"
+        (click)="setDeals(!filters.deals())"
+      >
+        🏷️ Deals only
+      </button>
+      <label class="sort">
+        Sort by
+        <select class="select" (change)="setSort($any($event.target).value)">
+          <option value="date" [selected]="filters.sort() === 'date'">Soonest departure</option>
+          <option value="price" [selected]="filters.sort() === 'price'">Price: low to high</option>
+          <option value="priceDesc" [selected]="filters.sort() === 'priceDesc'">
+            Price: high to low
+          </option>
+          <option value="rating" [selected]="filters.sort() === 'rating'">Best rated</option>
+        </select>
+      </label>
+    </div>
+
+    @if (result.items.length === 0) {
+      <div class="state">
+        <h3>No trips for this search</h3>
+        <p>Try other dates or a different destination.</p>
+        <button class="btn btn-secondary" (click)="reset()">Show all trips</button>
+      </div>
+    } @else {
+      <div class="grid" [class.reloading]="trips.isLoading()">
+        @for (trip of result.items; track trip.id) {
+          <app-trip-card [trip]="trip" />
+        }
+      </div>
+      <app-pagination
+        [page]="result.currentPage"
+        [pagesCount]="result.pagesCount"
+        (pageChange)="changePage($event)"
+      />
+    }
+  } @else {
+    <div class="grid">
+      @for (item of skeletons; track $index) {
+        <div class="skeleton" style="height: 340px"></div>
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,121 @@
+<div class="container page">
+  <div class="card login wide">
+    <span class="eyebrow">New here?</span>
+    <h1>Create an account</h1>
+
+    <form (submit)="submit($event)">
+      <div class="grid-2">
+        <div class="field">
+          <label for="firstName">First name</label>
+          <input
+            id="firstName"
+            class="input"
+            autocomplete="given-name"
+            [value]="form().firstName"
+            (input)="set('firstName', $any($event.target).value)"
+          />
+          @if (fieldErrors().firstName; as e) {
+            <small class="error">{{ e }}</small>
+          }
+        </div>
+        <div class="field">
+          <label for="lastName">Last name</label>
+          <input
+            id="lastName"
+            class="input"
+            autocomplete="family-name"
+            [value]="form().lastName"
+            (input)="set('lastName', $any($event.target).value)"
+          />
+          @if (fieldErrors().lastName; as e) {
+            <small class="error">{{ e }}</small>
+          }
+        </div>
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          class="input"
+          type="email"
+          autocomplete="email"
+          [value]="form().email"
+          (input)="set('email', $any($event.target).value)"
+        />
+        @if (fieldErrors().email; as e) {
+          <small class="error">{{ e }}</small>
+        }
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input
+          id="password"
+          class="input"
+          type="password"
+          autocomplete="new-password"
+          [value]="form().password"
+          (input)="set('password', $any($event.target).value)"
+        />
+        <small class="muted">At least 8 characters, with a letter and a digit.</small>
+        @if (fieldErrors().password; as e) {
+          <small class="error">{{ e }}</small>
+        }
+      </div>
+      <div class="field">
+        <label for="phone">Phone</label>
+        <input
+          id="phone"
+          class="input"
+          type="tel"
+          autocomplete="tel"
+          [value]="form().phone"
+          (input)="set('phone', $any($event.target).value)"
+        />
+        @if (fieldErrors().phone; as e) {
+          <small class="error">{{ e }}</small>
+        }
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label for="address">Address</label>
+          <input
+            id="address"
+            class="input"
+            autocomplete="street-address"
+            [value]="form().address"
+            (input)="set('address', $any($event.target).value)"
+          />
+          @if (fieldErrors().address; as e) {
+            <small class="error">{{ e }}</small>
+          }
+        </div>
+        <div class="field">
+          <label for="city">City</label>
+          <input
+            id="city"
+            class="input"
+            autocomplete="address-level2"
+            [value]="form().city"
+            (input)="set('city', $any($event.target).value)"
+          />
+          @if (fieldErrors().city; as e) {
+            <small class="error">{{ e }}</small>
+          }
+        </div>
+      </div>
+
+      @if (error(); as message) {
+        <p class="alert">{{ message }}</p>
+      }
+
+      <button class="btn btn-primary" type="submit" [disabled]="submitting()">
+        {{ submitting() ? 'Creating account…' : 'Create account' }}
+      </button>
+    </form>
+
+    <p class="hint muted">
+      Already have an account?
+      <a routerLink="/login" [queryParams]="{ returnUrl: returnUrl() }">Sign in</a>
+    </p>
+  </div>
+</div>

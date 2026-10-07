@@ -1,0 +1,140 @@
+<form class="hotel-form" (submit)="save($event)">
+  <div class="grid">
+    <label class="field name">
+      <span>Name</span>
+      <input
+        class="input"
+        maxlength="100"
+        [value]="name()"
+        (input)="name.set($any($event.target).value)"
+      />
+    </label>
+    <label class="field">
+      <span>Type</span>
+      <select class="select" (change)="typeId.set(+$any($event.target).value || null)">
+        <option value="">Choose…</option>
+        @for (t of options().accommodationTypes; track t.id) {
+          <option [value]="t.id" [selected]="t.id === typeId()">{{ t.name }}</option>
+        }
+      </select>
+    </label>
+    <label class="field">
+      <span>Stars</span>
+      <select class="select" (change)="stars.set(+$any($event.target).value)">
+        @for (s of starOptions; track s) {
+          <option [value]="s" [selected]="s === stars()">{{ s }} ★</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <div class="rooms-wrap">
+    <table class="rooms">
+      <thead>
+        <tr>
+          <th>Room type</th>
+          <th>Rooms</th>
+          <th>Price / night (€)</th>
+          <th>A/C</th>
+          <th>Balcony</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (room of rooms(); track $index; let i = $index) {
+          <tr>
+            <td>
+              <select
+                class="select"
+                [disabled]="room.hasReservations"
+                (change)="update(i, { roomTypeId: +$any($event.target).value || null })"
+              >
+                <option value="">Choose…</option>
+                @for (t of options().roomTypes; track t.id) {
+                  <option [value]="t.id" [selected]="t.id === room.roomTypeId">
+                    {{ t.name }} ({{ t.capacity }})
+                  </option>
+                }
+              </select>
+            </td>
+            <td>
+              <input
+                class="input number"
+                type="number"
+                [min]="room.maxBooked"
+                max="1000"
+                [value]="room.numberOfRooms"
+                (input)="update(i, { numberOfRooms: +$any($event.target).value })"
+              />
+              @if (room.maxBooked) {
+                <span class="muted small block">{{ room.maxBooked }} booked</span>
+              }
+            </td>
+            <td>
+              <input
+                class="input number"
+                type="number"
+                min="1"
+                [value]="room.pricePerNight || ''"
+                (input)="update(i, { pricePerNight: +$any($event.target).value })"
+              />
+            </td>
+            <td>
+              <input
+                type="checkbox"
+                [checked]="room.ac"
+                (change)="update(i, { ac: $any($event.target).checked })"
+              />
+            </td>
+            <td>
+              <input
+                type="checkbox"
+                [checked]="room.balcony"
+                (change)="update(i, { balcony: $any($event.target).checked })"
+              />
+            </td>
+            <td>
+              @if (room.hasReservations) {
+                <span
+                  class="badge"
+                  title="Has reservations, so it stays. Set rooms to 0 to close it."
+                  >booked</span
+                >
+              } @else {
+                <button
+                  type="button"
+                  class="remove"
+                  aria-label="Remove room type"
+                  (click)="remove(i)"
+                >
+                  ×
+                </button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <button type="button" class="btn btn-secondary btn-sm add" (click)="add()">+ Room type</button>
+  <p class="muted small">
+    A new price applies to trips from today on; reservations keep the price they were made with.
+  </p>
+
+  @if (errors().length) {
+    <ul class="alert">
+      @for (e of errors(); track $index) {
+        <li>{{ e }}</li>
+      }
+    </ul>
+  }
+
+  <div class="actions">
+    <button class="btn btn-primary btn-sm" type="submit" [disabled]="saving()">
+      {{ saving() ? 'Saving…' : hotel() ? 'Save hotel' : 'Add hotel' }}
+    </button>
+    <button class="btn btn-secondary btn-sm" type="button" (click)="cancelled.emit()">
+      Cancel
+    </button>
+  </div>
+</form>

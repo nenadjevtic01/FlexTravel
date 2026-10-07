@@ -1,0 +1,9 @@
+@if (count() > 0 && average() !== null) {
+  <span class="rating" [class.light]="light()" [attr.aria-label]="label()">
+    <span class="star" aria-hidden="true">★</span>
+    <strong>{{ average()!.toFixed(1) }}</strong>
+    @if (!compact()) {
+      <span class="count">· {{ count() }} {{ count() === 1 ? 'review' : 'reviews' }}</span>
+    }
+  </span>
+}

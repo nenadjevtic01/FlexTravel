@@ -1,0 +1,213 @@
+<section class="hero">
+  <div class="container hero-inner">
+    <span class="eyebrow">Flex Travel</span>
+    <h1>Discover your next journey</h1>
+    <p>
+      Pick where and when you want to travel and we will show the package trips that depart then,
+      with transport, a guided program and a hotel of your choice.
+    </p>
+
+    @if (!databaseEmpty()) {
+      <app-trip-search />
+    }
+  </div>
+</section>
+
+<div class="container page">
+  @if (databaseEmpty()) {
+    <div class="card empty-db">
+      <h2>The database is empty</h2>
+      <p class="muted">
+        This is a fresh database with no data. Run the initial seed (use case
+        <strong>Fill database</strong>) to load continents, countries, destinations, accommodation
+        and test users.
+      </p>
+      @if (seedError(); as error) {
+        <p class="alert">{{ error }}</p>
+      }
+      <button class="btn btn-primary" [disabled]="seeding()" (click)="fillDatabase()">
+        {{ seeding() ? 'Filling the database…' : 'Fill database' }}
+      </button>
+    </div>
+  } @else {
+    @if (upcoming.hasValue() && upcoming.value().items.length) {
+      <section class="upcoming">
+        <div class="section-head">
+          <h2>Upcoming departures</h2>
+          <a routerLink="/trips">All {{ upcoming.value().totalCount }} trips →</a>
+        </div>
+        <div class="trips">
+          @for (trip of upcoming.value().items; track trip.id) {
+            <app-trip-card [trip]="trip" />
+          }
+        </div>
+      </section>
+    }
+
+    @if (recent.trips().length) {
+      <section class="recent">
+        <div class="section-head">
+          <h2>Recently viewed</h2>
+        </div>
+        <div class="recent-list">
+          @for (r of recent.trips(); track r.id) {
+            <a class="card recent-item" [routerLink]="['/trips', r.id]">
+              @if (r.image) {
+                <img [src]="imageUrl(r.image)" [alt]="r.destination" loading="lazy" />
+              }
+              <span>
+                <strong>{{ r.name }}</strong>
+                <span class="muted small block"
+                  >{{ r.destination }} · {{ formatDateRange(r.startDate, r.endDate) }}</span
+                >
+              </span>
+            </a>
+          }
+        </div>
+      </section>
+    }
+
+    @if (mapMarkers().length) {
+      <section class="map-section">
+        <div class="section-head">
+          <h2>On the map</h2>
+          <span class="muted">Click a point to open the destination</span>
+        </div>
+        <app-map-view
+          [markers]="mapMarkers()"
+          [zoom]="2"
+          height="380px"
+          (markerClick)="openDestination($event)"
+        />
+      </section>
+    }
+
+    <div class="section-head">
+      <h2>Explore destinations</h2>
+      @if (totalDestinations()) {
+        <span class="muted">
+          {{ totalDestinations() }} destinations on {{ continents.value()?.length }} continents
+        </span>
+      }
+    </div>
+    <div class="filters">
+      <label class="search">
+        <span class="sr-only">Search destinations</span>
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
+          <path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          placeholder="Destination or country…"
+          [value]="keywordInput()"
+          (input)="onKeyword($any($event.target).value)"
+        />
+      </label>
+      <div class="chips">
+        <button
+          class="chip"
+          [class.active]="filters.continentId() === null"
+          (click)="filters.setContinent(null)"
+        >
+          All continents
+        </button>
+        @if (continents.hasValue()) {
+          @for (continent of continents.value(); track continent.id) {
+            <button
+              class="chip"
+              [class.active]="filters.continentId() === continent.id"
+              (click)="filters.setContinent(continent.id)"
+            >
+              {{ continent.name }}
+              <span class="count">{{ continent.destinationsCount }}</span>
+            </button>
+          }
+        }
+      </div>
+
+      @if (filters.continentId() !== null && countries.hasValue()) {
+        <select
+          class="select country-select"
+          aria-label="Country"
+          (change)="onCountryChange($any($event.target).value)"
+        >
+          <option value="" [selected]="filters.countryId() === null">All countries</option>
+          @for (country of countries.value(); track country.id) {
+            <option [value]="country.id" [selected]="filters.countryId() === country.id">
+              {{ country.name }}
+            </option>
+          }
+        </select>
+      }
+    </div>
+
+    @if (destinations.error(); as error) {
+      <div class="state">
+        <h3>Destinations could not be loaded</h3>
+        <p>{{ errorText(error) }}</p>
+        <button class="btn btn-secondary" (click)="destinations.reload()">Try again</button>
+      </div>
+    } @else if (destinations.hasValue()) {
+      @let result = destinations.value();
+      <p class="results muted">
+        Found: <strong>{{ result.totalCount }}</strong>
+        @if (filters.keyword() || filters.continentId() !== null) {
+          · <button class="link" (click)="clearFilters()">clear filters</button>
+        }
+      </p>
+
+      @if (result.items.length === 0) {
+        <div class="state">
+          <h3>No results</h3>
+          <p>Try a different search term or remove the filters.</p>
+        </div>
+      } @else {
+        <div class="grid" [class.reloading]="destinations.isLoading()">
+          @for (destination of result.items; track destination.id) {
+            <div class="destination-wrap">
+              <a class="card destination" [routerLink]="['/destinations', destination.id]">
+                <div class="image">
+                  @if (destination.image) {
+                    <img
+                      [src]="imageUrl(destination.image)"
+                      [alt]="destination.name"
+                      loading="lazy"
+                    />
+                  }
+                  <span class="badge place">{{ destination.country }}</span>
+                </div>
+                <div class="card-body">
+                  <span class="eyebrow">{{ destination.continent }}</span>
+                  <h3>{{ destination.name }}</h3>
+                  <p class="muted description">{{ destination.description }}</p>
+                  <div class="meta">
+                    <span>🏨 {{ destination.accommodationsCount }} places to stay</span>
+                    <app-safety-meter [level]="destination.safetyLevel" />
+                  </div>
+                </div>
+              </a>
+              <app-favorite-button
+                class="favorite"
+                [destinationId]="destination.id"
+                [destinationName]="destination.name"
+              />
+            </div>
+          }
+        </div>
+
+        <app-pagination
+          [page]="result.currentPage"
+          [pagesCount]="result.pagesCount"
+          (pageChange)="changePage($event)"
+        />
+      }
+    } @else {
+      <div class="grid">
+        @for (item of skeletons; track $index) {
+          <div class="skeleton placeholder"></div>
+        }
+      </div>
+    }
+  }
+</div>

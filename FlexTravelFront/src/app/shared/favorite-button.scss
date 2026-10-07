@@ -1,0 +1,31 @@
+.heart {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-overlay);
+  color: var(--color-accent);
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.heart.labelled {
+  font-size: 0.9rem;
+}
+.heart.labelled span {
+  font-size: 1.1rem;
+}
+.heart:hover {
+  transform: scale(1.06);
+}
+.heart.on {
+  border-color: var(--color-accent);
+}

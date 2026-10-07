@@ -1,0 +1,242 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.year {
+  width: 140px;
+}
+.year span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+}
+.tile strong {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+.small {
+  font-size: 0.8rem;
+}
+h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  margin-bottom: 14px;
+}
+.legend {
+  display: flex;
+  gap: 14px;
+  font-size: 0.82rem;
+  color: var(--color-muted);
+}
+.legend span,
+.tooltip span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.s1 {
+  background: var(--chart-1);
+}
+.s2 {
+  background: var(--chart-2);
+}
+.link {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.chart {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+}
+.ticks {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 200px;
+  font-size: 0.72rem;
+  color: var(--color-muted);
+  text-align: right;
+}
+.plot {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  height: 222px;
+  background:
+    linear-gradient(var(--color-border), var(--color-border)) 0 0 / 100% 1px no-repeat,
+    linear-gradient(var(--color-border), var(--color-border)) 0 100px / 100% 1px no-repeat;
+}
+.month {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  outline: none;
+}
+.month:focus-visible {
+  outline: 2px solid var(--color-focus);
+  border-radius: 4px;
+}
+.bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  height: 200px;
+  border-bottom: 1px solid var(--color-muted);
+}
+.bar {
+  width: min(40%, 16px);
+  border-radius: 4px 4px 0 0;
+}
+.month:hover .bar,
+.month:focus .bar {
+  opacity: 0.85;
+}
+.axis-label {
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: var(--color-muted);
+}
+.tooltip {
+  position: absolute;
+  bottom: calc(100% - 20px);
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+.tooltip.left {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.tooltip.right {
+  left: 0;
+  transform: none;
+}
+.two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.hbars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+}
+.hbars li {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 72px;
+  gap: 10px;
+  align-items: center;
+}
+.name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.name a {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.track {
+  height: 12px;
+  border-radius: 0 4px 4px 0;
+  background: var(--color-bg);
+}
+.fill {
+  display: block;
+  height: 100%;
+  max-width: 100%;
+  border-radius: 0 4px 4px 0;
+}
+.value {
+  font-weight: 600;
+  text-align: right;
+}
+.extras-title {
+  margin-top: 20px;
+}
+.table-wrap {
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+th,
+td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+th {
+  color: var(--color-muted);
+  font-weight: 600;
+}
+@media (max-width: 860px) {
+  .two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 520px) {
+  .bar {
+    width: 40%;
+  }
+  .axis-label {
+    font-size: 0.62rem;
+  }
+}

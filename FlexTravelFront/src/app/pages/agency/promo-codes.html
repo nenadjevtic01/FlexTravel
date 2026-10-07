@@ -1,0 +1,155 @@
+<div class="layout">
+  <section class="card table-wrap">
+    @if (codes.hasValue()) {
+      <table>
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Discount</th>
+            <th>Valid</th>
+            <th>Used</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of codes.value(); track c.id) {
+            <tr [class.inactive]="c.status !== 'Active' && c.status !== 'Scheduled'">
+              <td>
+                <code>{{ c.code }}</code>
+                @if (c.description) {
+                  <span class="muted small block">{{ c.description }}</span>
+                }
+                <span class="muted small block">by {{ c.createdBy ?? 'unknown' }}</span>
+              </td>
+              <td>−{{ c.discountPercent }}%</td>
+              <td class="nowrap">{{ formatDate(c.validFrom) }} – {{ formatDate(c.validTo) }}</td>
+              <td>
+                {{ c.uses }}{{ c.maxUses ? ' / ' + c.maxUses : '' }}
+                @if (c.discountGiven) {
+                  <span class="muted small block">{{ formatMoney(c.discountGiven) }} off</span>
+                }
+              </td>
+              <td>
+                <span
+                  class="badge"
+                  [class.badge-success]="c.status === 'Active'"
+                  [class.badge-danger]="c.status === 'Switched off'"
+                  >{{ c.status }}</span
+                >
+              </td>
+              <td class="nowrap">
+                @if (c.isActive && c.status !== 'Expired') {
+                  <button
+                    class="btn btn-secondary btn-sm"
+                    [disabled]="busyId() === c.id"
+                    (click)="setActive(c, false)"
+                  >
+                    Switch off
+                  </button>
+                } @else if (!c.isActive && c.status !== 'Expired') {
+                  <button
+                    class="btn btn-secondary btn-sm"
+                    [disabled]="busyId() === c.id"
+                    (click)="setActive(c, true)"
+                  >
+                    Switch on
+                  </button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="muted">No promo codes yet.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <div class="skeleton" style="height: 200px"></div>
+    }
+  </section>
+
+  <section class="card card-body form">
+    <h3>New promo code</h3>
+    <p class="muted small">Valid only for your agency's trips. Customers type it when booking.</p>
+    <div class="field">
+      <label for="code">Code</label>
+      <input
+        id="code"
+        class="input upper"
+        maxlength="20"
+        placeholder="e.g. SPRING10"
+        [value]="code()"
+        (input)="code.set($any($event.target).value)"
+      />
+    </div>
+    <div class="field">
+      <label for="description">Description (internal)</label>
+      <input
+        id="description"
+        class="input"
+        maxlength="200"
+        placeholder="e.g. Newsletter, travel fair"
+        [value]="description()"
+        (input)="description.set($any($event.target).value)"
+      />
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="percent">Discount %</label>
+        <input
+          id="percent"
+          class="input"
+          type="number"
+          min="1"
+          max="50"
+          [value]="percent()"
+          (input)="percent.set(+$any($event.target).value)"
+        />
+      </div>
+      <div class="field">
+        <label for="maxUses">Max uses</label>
+        <input
+          id="maxUses"
+          class="input"
+          type="number"
+          min="1"
+          placeholder="Unlimited"
+          [value]="maxUses() ?? ''"
+          (input)="setMaxUses($any($event.target).value)"
+        />
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="from">Valid from</label>
+        <input
+          id="from"
+          class="input"
+          type="date"
+          [value]="validFrom()"
+          (change)="validFrom.set($any($event.target).value)"
+        />
+      </div>
+      <div class="field">
+        <label for="to">Valid until</label>
+        <input
+          id="to"
+          class="input"
+          type="date"
+          [min]="validFrom()"
+          [value]="validTo()"
+          (change)="validTo.set($any($event.target).value)"
+        />
+      </div>
+    </div>
+    @if (error(); as e) {
+      <p class="alert">{{ e }}</p>
+    }
+    @if (created(); as c) {
+      <p class="alert alert-success">Code {{ c }} is ready to share.</p>
+    }
+    <button class="btn btn-primary" [disabled]="saving()" (click)="create()">Create code</button>
+  </section>
+</div>

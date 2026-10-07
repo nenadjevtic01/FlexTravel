@@ -1,0 +1,52 @@
+@if (auth.canSetPriceAlerts()) {
+  <section class="card card-body alert-box">
+    <h3><span aria-hidden="true">🔔</span> Price alert</h3>
+    @if (alert(); as a) {
+      <p>
+        You will be notified when a trip to {{ destinationName() }} costs at most
+        <strong>{{ formatEuro(a.maxPrice) }}</strong> per person.
+      </p>
+      @if (a.lowestPrice !== null) {
+        <p class="muted small">
+          Today the cheapest is
+          <a [routerLink]="['/trips', a.lowestPriceTripId]">{{ formatMoney(a.lowestPrice) }}</a>
+          per person{{ a.isMet ? ', already within your limit.' : '.' }}
+        </p>
+      }
+    } @else {
+      <p class="muted small">
+        Get a notification when a trip to {{ destinationName() }} drops to your price.
+      </p>
+    }
+    <form class="row" (submit)="save($event)">
+      <label class="sr-only" for="alert-limit">Most you want to pay per person, in euros</label>
+      <span class="currency">€</span>
+      <input
+        id="alert-limit"
+        class="input"
+        type="number"
+        min="1"
+        step="10"
+        placeholder="e.g. 600"
+        [value]="limit() ?? ''"
+        (input)="limit.set(toNumber($any($event.target).value))"
+      />
+      <button class="btn btn-primary btn-sm" type="submit" [disabled]="busy() || !limit()">
+        {{ alert() ? 'Update' : 'Notify me' }}
+      </button>
+      @if (alert()) {
+        <button
+          class="btn btn-secondary btn-sm"
+          type="button"
+          [disabled]="busy()"
+          (click)="remove()"
+        >
+          Remove
+        </button>
+      }
+    </form>
+    @if (error(); as e) {
+      <p class="error small">{{ e }}</p>
+    }
+  </section>
+}

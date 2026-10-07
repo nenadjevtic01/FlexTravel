@@ -1,0 +1,14 @@
+<div class="stars" role="radiogroup" [attr.aria-label]="label()">
+  @for (n of [1, 2, 3, 4, 5]; track n) {
+    <button
+      type="button"
+      role="radio"
+      [attr.aria-checked]="value() === n"
+      [attr.aria-label]="n + (n === 1 ? ' star' : ' stars')"
+      [class.on]="n <= value()"
+      (click)="valueChange.emit(n)"
+    >
+      ★
+    </button>
+  }
+</div>

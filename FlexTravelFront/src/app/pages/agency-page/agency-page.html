@@ -1,0 +1,91 @@
+<div class="container page">
+  @if (page.error(); as error) {
+    <div class="state">
+      <h3>
+        {{ notFound(error) ? 'This agency does not exist' : 'The agency could not be loaded' }}
+      </h3>
+      <a class="btn btn-secondary" routerLink="/trips">Browse trips</a>
+    </div>
+  } @else if (page.hasValue()) {
+    @let a = page.value();
+    <header class="card card-body hero">
+      <div class="logo">
+        @if (a.logo) {
+          <img [src]="imageUrl(a.logo)" [alt]="'Logo of ' + a.name" />
+        } @else {
+          <span aria-hidden="true">{{ a.name.charAt(0) }}</span>
+        }
+      </div>
+      <div class="intro">
+        <span class="eyebrow">Travel agency</span>
+        <h1>{{ a.name }}</h1>
+        @if (a.description) {
+          <p>{{ a.description }}</p>
+        }
+        <ul class="contacts">
+          <li>📍 {{ a.address }}</li>
+          <li>
+            📞 <a [href]="'tel:' + a.phone.replaceAll(' ', '')">{{ a.phone }}</a>
+          </li>
+          @if (a.email) {
+            <li>
+              ✉️ <a [href]="'mailto:' + a.email">{{ a.email }}</a>
+            </li>
+          }
+          @if (a.website) {
+            <li>
+              🌐
+              <a [href]="a.website" target="_blank" rel="noopener noreferrer">{{
+                host(a.website)
+              }}</a>
+            </li>
+          }
+        </ul>
+      </div>
+      <dl class="numbers">
+        <div>
+          <dt>Rating</dt>
+          <dd>{{ a.rating.average !== null ? '★ ' + a.rating.average.toFixed(1) : '—' }}</dd>
+        </div>
+        <div>
+          <dt>Travelers</dt>
+          <dd>{{ a.travelersServed }}</dd>
+        </div>
+        <div>
+          <dt>Destinations</dt>
+          <dd>{{ a.destinationCount }}</dd>
+        </div>
+        <div>
+          <dt>On sale</dt>
+          <dd>{{ a.trips.length }}</dd>
+        </div>
+      </dl>
+    </header>
+
+    <section class="section">
+      <h2>Trips on sale</h2>
+      @if (a.trips.length) {
+        <div class="grid">
+          @for (t of a.trips; track t.id) {
+            <app-trip-card [trip]="t" />
+          }
+        </div>
+      } @else {
+        <p class="muted">No trips on sale right now.</p>
+      }
+    </section>
+
+    <section class="card card-body section">
+      <h2>What travelers say</h2>
+      <app-rating-breakdown [rating]="a.rating" />
+      <app-review-list
+        [filter]="{ agencyId: a.id }"
+        [showTrip]="true"
+        emptyText="No reviews yet."
+      />
+    </section>
+  } @else {
+    <div class="skeleton" style="height: 260px; margin-bottom: 24px"></div>
+    <div class="skeleton" style="height: 320px"></div>
+  }
+</div>

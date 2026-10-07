@@ -1,0 +1,249 @@
+.hero {
+  position: relative;
+  padding: 64px 0 72px;
+  color: #fff;
+  background:
+    linear-gradient(120deg, rgb(10 53 64 / 92%), rgb(15 76 92 / 55%)),
+    url('/images/Greece/Santorini/Santorini01.jpg') center / cover;
+
+  h1 {
+    max-width: 640px;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+  }
+
+  p {
+    max-width: 620px;
+    margin-bottom: 24px;
+    color: rgb(255 255 255 / 85%);
+  }
+
+  .eyebrow {
+    color: var(--color-sand);
+  }
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 240px;
+  padding: 2px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-muted);
+
+  input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 0;
+    border: 0;
+    outline: 0;
+    font: inherit;
+    color: var(--color-text);
+  }
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 0;
+  margin-bottom: 20px;
+  padding: 16px;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+  position: relative;
+}
+
+.country-select {
+  width: auto;
+  min-width: 200px;
+}
+
+.results {
+  margin-bottom: 16px;
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 24px;
+  transition: opacity 0.2s;
+
+  &.reloading {
+    opacity: 0.55;
+  }
+}
+
+.destination {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow);
+
+    img {
+      transform: scale(1.05);
+    }
+  }
+
+  h3 {
+    margin: 4px 0 8px;
+    font-size: 1.35rem;
+  }
+}
+
+.image {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--color-primary-soft);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s;
+  }
+
+  .place {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    background: var(--color-overlay);
+  }
+}
+
+.description {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.9rem;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.placeholder {
+  height: 360px;
+}
+
+.empty-db {
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 36px;
+  text-align: center;
+  position: relative;
+}
+
+.upcoming {
+  margin-bottom: 40px;
+}
+
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 14px;
+
+  h2 {
+    margin: 0;
+    font-size: 1.6rem;
+  }
+
+  a {
+    font-weight: 600;
+    text-decoration: none;
+  }
+}
+
+.trips {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.destination-wrap {
+  position: relative;
+  display: flex;
+
+  > .destination {
+    flex: 1;
+  }
+
+  .favorite {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+  }
+}
+
+.recent,
+.map-section {
+  margin-bottom: 36px;
+}
+
+.recent-list {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.recent-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 280px;
+  padding: 10px;
+  color: inherit;
+  text-decoration: none;
+
+  img {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+  }
+
+  .block {
+    display: block;
+  }
+
+  .small {
+    font-size: 0.8rem;
+  }
+
+  &:hover {
+    border-color: var(--color-primary);
+  }
+}

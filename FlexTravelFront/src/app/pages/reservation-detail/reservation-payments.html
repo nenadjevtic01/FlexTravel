@@ -1,0 +1,102 @@
+@let p = summary();
+<div class="head">
+  <h3>Payment</h3>
+  <app-payment-badge [payment]="p" />
+</div>
+
+<dl class="facts">
+  <dt>Paid</dt>
+  <dd>{{ formatMoney(p.paid) }} of {{ formatMoney(p.amountDue) }}</dd>
+  @if (p.depositDueDate) {
+    <dt>Deposit ({{ formatMoney(p.deposit) }})</dt>
+    <dd [class.late]="p.isOverdue && p.paid < p.deposit">by {{ formatDate(p.depositDueDate) }}</dd>
+  }
+  @if (p.balanceDueDate && p.balance > 0) {
+    <dt>Rest ({{ formatMoney(p.balance) }})</dt>
+    <dd [class.late]="p.isOverdue">by {{ formatDate(p.balanceDueDate) }}</dd>
+  }
+  @if (p.refundDue > 0) {
+    <dt>To be refunded</dt>
+    <dd>{{ formatMoney(p.refundDue) }}</dd>
+  }
+</dl>
+@if (p.status === 'Not due yet') {
+  <p class="muted small">Nothing is due before the agency confirms the reservation.</p>
+}
+
+@if (payments().length) {
+  <ul class="payments">
+    @for (pay of payments(); track pay.id) {
+      <li>
+        <span>
+          <strong [class.refund]="pay.amount < 0"
+            >{{ pay.amount < 0 ? 'Refund ' : '' }}{{ formatMoney(abs(pay.amount)) }}</strong
+          >
+          · {{ methodLabel(pay.method) }}
+          @if (pay.note) {
+            · {{ pay.note }}
+          }
+        </span>
+        <span class="muted small">{{ formatDateTime(pay.paidAt) }} · {{ pay.recordedBy }}</span>
+      </li>
+    }
+  </ul>
+}
+
+@if (canRecord()) {
+  <div class="record">
+    <div class="row">
+      <select class="select" [value]="kind()" (change)="kind.set($any($event.target).value)">
+        @if (p.balance > 0 && p.status !== 'Refund due') {
+          <option value="payment">Payment received</option>
+        }
+        @if (p.refundDue > 0) {
+          <option value="refund">Refund sent</option>
+        }
+      </select>
+      <input
+        class="input"
+        type="number"
+        min="0.01"
+        step="0.01"
+        placeholder="Amount €"
+        [value]="amount() ?? ''"
+        (input)="amount.set(+$any($event.target).value || null)"
+      />
+      <select class="select" [value]="method()" (change)="method.set($any($event.target).value)">
+        <option value="Card">Card</option>
+        <option value="Cash">Cash</option>
+        <option value="BankTransfer">Bank transfer</option>
+      </select>
+    </div>
+    <div class="quick">
+      @if (kind() === 'payment') {
+        @if (p.paid < p.deposit) {
+          <button type="button" class="link" (click)="amount.set(round(p.deposit - p.paid))">
+            Deposit {{ formatMoney(round(p.deposit - p.paid)) }}
+          </button>
+        }
+        <button type="button" class="link" (click)="amount.set(p.balance)">
+          Everything owed {{ formatMoney(p.balance) }}
+        </button>
+      } @else {
+        <button type="button" class="link" (click)="amount.set(p.refundDue)">
+          Full refund {{ formatMoney(p.refundDue) }}
+        </button>
+      }
+    </div>
+    <input
+      class="input"
+      maxlength="200"
+      placeholder="Note (optional)"
+      [value]="note()"
+      (input)="note.set($any($event.target).value)"
+    />
+    @if (error(); as e) {
+      <p class="alert">{{ e }}</p>
+    }
+    <button class="btn btn-primary btn-sm" [disabled]="busy() || !amount()" (click)="record()">
+      Record
+    </button>
+  </div>
+}

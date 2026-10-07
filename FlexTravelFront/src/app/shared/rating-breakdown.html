@@ -1,0 +1,30 @@
+@let r = rating();
+@if (r && r.count > 0) {
+  <div class="breakdown">
+    <div class="overall">
+      <strong>{{ r.average?.toFixed(1) }}</strong>
+      <span class="stars" aria-hidden="true">{{ starsText(r.average) }}</span>
+      <span class="muted">{{ r.count }} {{ r.count === 1 ? 'review' : 'reviews' }}</span>
+    </div>
+    <ul class="bars" aria-label="Reviews by stars">
+      @for (count of r.stars; track $index; let i = $index) {
+        <li>
+          <span class="label">{{ 5 - i }}★</span>
+          <span class="bar"><span [style.width.%]="share(count)"></span></span>
+          <span class="muted num">{{ count }}</span>
+        </li>
+      }
+    </ul>
+    @if (r.categories.length) {
+      <ul class="bars categories" aria-label="Ratings of parts of the trip">
+        @for (c of r.categories; track c.name) {
+          <li>
+            <span class="label">{{ c.name }}</span>
+            <span class="bar"><span [style.width.%]="((c.average ?? 0) / 5) * 100"></span></span>
+            <span class="num">{{ c.average?.toFixed(1) }}</span>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+}

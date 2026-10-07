@@ -1,0 +1,109 @@
+<div class="container page">
+  <header class="page-header">
+    <span class="eyebrow">Audit log</span>
+    <h1>System activity</h1>
+    <p class="muted">
+      Every use case executed by the backend: who ran it, when, with which data and whether they
+      were allowed to.
+    </p>
+  </header>
+
+  @if (!auth.canSeeAuditLog()) {
+    <div class="card state">
+      <h3>Administrators only</h3>
+      <p>The log is available to users who have the “Search audit logs” use case.</p>
+      <a class="btn btn-primary" routerLink="/login" [queryParams]="{ returnUrl: '/activity' }">
+        Sign in
+      </a>
+    </div>
+  } @else {
+    <div class="card toolbar">
+      <div class="field">
+        <label for="useCase">Use case</label>
+        <select id="useCase" class="select" (change)="onUseCase($any($event.target).value)">
+          <option value="">All</option>
+          @for (name of useCaseNames; track name) {
+            <option [value]="name" [selected]="name === useCaseName()">{{ name }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label for="user">User</label>
+        <input
+          id="user"
+          class="input"
+          placeholder="e.g. Anonymous"
+          (input)="onUsername($any($event.target).value)"
+        />
+      </div>
+      <label class="toggle">
+        <input
+          type="checkbox"
+          [checked]="autoRefresh()"
+          (change)="autoRefresh.set($any($event.target).checked)"
+        />
+        <span class="live" [class.on]="autoRefresh()"></span>
+        Live (every 5 s)
+      </label>
+      <button class="btn btn-secondary btn-sm" (click)="logs.reload()">Refresh</button>
+    </div>
+
+    @if (logs.error(); as error) {
+      <p class="alert">{{ errorText(error) }}</p>
+    }
+
+    @if (logs.hasValue()) {
+      @let result = logs.value();
+      <p class="muted summary">
+        Total entries: <strong>{{ result.totalCount }}</strong>
+      </p>
+
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Time</th>
+              <th>User</th>
+              <th>Use case</th>
+              <th>Data</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of result.items; track entry.id) {
+              <tr [class.fresh]="entry.id > highlightAbove()">
+                <td class="muted">{{ entry.id }}</td>
+                <td class="nowrap">{{ formatDateTime(entry.executionDateTime) }}</td>
+                <td>
+                  <span class="user" [class.anon]="entry.userId === 0">{{ entry.user }}</span>
+                </td>
+                <td class="nowrap">{{ entry.useCaseName }}</td>
+                <td class="data" [attr.title]="entry.data">{{ prettyData(entry.data) }}</td>
+                <td>
+                  @if (entry.isAuthorized) {
+                    <span class="badge badge-success">Allowed</span>
+                  } @else {
+                    <span class="badge badge-danger">Denied</span>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="state">No entries match the selected filters.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <app-pagination
+        [page]="result.currentPage"
+        [pagesCount]="result.pagesCount"
+        (pageChange)="page.set($event)"
+      />
+    } @else if (logs.isLoading()) {
+      <div class="skeleton" style="height: 360px"></div>
+    }
+  }
+</div>

@@ -1,0 +1,306 @@
+<div class="toolbar">
+  <div class="chips">
+    <button class="chip" [class.active]="continentId() === null" (click)="continentId.set(null)">
+      All continents
+    </button>
+    @if (options.hasValue()) {
+      @for (c of options.value().continents; track c.id) {
+        <button
+          class="chip"
+          [class.active]="continentId() === c.id"
+          (click)="continentId.set(c.id)"
+        >
+          {{ c.name }}
+        </button>
+      }
+    }
+  </div>
+  <div class="toolbar-actions">
+    <button
+      class="btn btn-secondary btn-sm"
+      title="Delete uploaded images that no destination uses"
+      (click)="cleanUpImages()"
+    >
+      🧹 Clean up images
+    </button>
+    <button class="btn btn-primary btn-sm" (click)="newCountry()">+ New country</button>
+  </div>
+</div>
+
+@if (cleanupResult(); as result) {
+  <p class="alert alert-success">{{ result }}</p>
+}
+
+@if (notice(); as n) {
+  <p class="alert alert-success">{{ n }}</p>
+}
+
+<div class="layout">
+  <section class="card list">
+    <div class="search">
+      <input
+        class="input"
+        placeholder="Search countries"
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+      />
+    </div>
+    @if (countries.hasValue()) {
+      @for (c of visibleCountries(); track c.id) {
+        <button class="country" [class.active]="selectedId() === c.id" (click)="select(c)">
+          <span>
+            <strong>{{ c.name }}</strong>
+            <span class="muted small block">{{ c.continent }}</span>
+          </span>
+          <span class="muted small">{{ c.destinationsCount }} dest.</span>
+        </button>
+      } @empty {
+        <p class="muted empty">No countries match.</p>
+      }
+    } @else {
+      <div class="skeleton" style="height: 300px; margin: 12px"></div>
+    }
+  </section>
+
+  <div class="detail">
+    @if (editingId() !== null) {
+      @let f = form();
+      <form class="card card-body form" (submit)="save($event)">
+        <h3>{{ editingId() ? 'Edit ' + f.name : 'New country' }}</h3>
+
+        <div class="grid">
+          <label class="field">
+            <span>Name</span>
+            <input
+              class="input"
+              maxlength="60"
+              [value]="f.name"
+              (input)="set('name', $any($event.target).value)"
+            />
+          </label>
+          <label class="field">
+            <span>Continent</span>
+            <select
+              class="select"
+              (change)="set('continentId', numberOrNull($any($event.target).value))"
+            >
+              <option value="">Choose…</option>
+              @for (c of options.value()?.continents ?? []; track c.id) {
+                <option [value]="c.id" [selected]="c.id === f.continentId">{{ c.name }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span>Capital city</span>
+            <input
+              class="input"
+              maxlength="60"
+              [value]="f.capitalCity"
+              (input)="set('capitalCity', $any($event.target).value)"
+            />
+          </label>
+          <label class="field">
+            <span>Language</span>
+            <input
+              class="input"
+              maxlength="60"
+              [value]="f.language"
+              (input)="set('language', $any($event.target).value)"
+            />
+          </label>
+          <label class="field">
+            <span>Currency</span>
+            <input
+              class="input"
+              maxlength="50"
+              placeholder="e.g. Euro (EUR)"
+              [value]="f.currency"
+              (input)="set('currency', $any($event.target).value)"
+            />
+          </label>
+          <label class="field">
+            <span>Population</span>
+            <input
+              class="input"
+              type="number"
+              min="1"
+              [value]="f.population ?? ''"
+              (input)="set('population', numberOrNull($any($event.target).value))"
+            />
+          </label>
+          <label class="field">
+            <span>Area (km²)</span>
+            <input
+              class="input"
+              type="number"
+              min="1"
+              [value]="f.totalArea ?? ''"
+              (input)="set('totalArea', numberOrNull($any($event.target).value))"
+            />
+          </label>
+        </div>
+
+        <fieldset>
+          <legend>
+            🛂 Visa <span class="muted">(leave the type empty if no visa is needed)</span>
+          </legend>
+          <div class="grid">
+            <label class="field">
+              <span>Type</span>
+              <input
+                class="input"
+                maxlength="100"
+                placeholder="e.g. Visa-free"
+                [value]="f.visaType"
+                (input)="set('visaType', $any($event.target).value)"
+              />
+            </label>
+            <label class="field">
+              <span>Duration</span>
+              <input
+                class="input"
+                maxlength="100"
+                placeholder="e.g. Up to 90 days"
+                [disabled]="!f.visaType.trim()"
+                [value]="f.visaDuration"
+                (input)="set('visaDuration', $any($event.target).value)"
+              />
+            </label>
+          </div>
+          <label class="field">
+            <span>Requirements</span>
+            <textarea
+              class="input"
+              rows="2"
+              maxlength="2000"
+              [disabled]="!f.visaType.trim()"
+              [value]="f.visaRequirements"
+              (input)="set('visaRequirements', $any($event.target).value)"
+            ></textarea>
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>🛡️ Safety</legend>
+          <label class="field">
+            <span>Level</span>
+            <select
+              class="select"
+              (change)="set('safetyLevel', numberOrNull($any($event.target).value))"
+            >
+              <option value="" [selected]="f.safetyLevel === null">Unknown</option>
+              @for (level of [5, 4, 3, 2, 1]; track level) {
+                <option [value]="level" [selected]="f.safetyLevel === level">
+                  {{ level }} – {{ level >= 4 ? 'safe' : level === 3 ? 'caution' : 'higher risk' }}
+                </option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span>Advice for travelers</span>
+            <textarea
+              class="input"
+              rows="2"
+              maxlength="1000"
+              [disabled]="f.safetyLevel === null"
+              [value]="f.safetyAdvices"
+              (input)="set('safetyAdvices', $any($event.target).value)"
+            ></textarea>
+          </label>
+        </fieldset>
+
+        @if (errors().length) {
+          <ul class="alert">
+            @for (e of errors(); track $index) {
+              <li>{{ e }}</li>
+            }
+          </ul>
+        }
+
+        <div class="actions">
+          <button class="btn btn-primary" type="submit" [disabled]="saving()">
+            {{ saving() ? 'Saving…' : 'Save country' }}
+          </button>
+          <button class="btn btn-secondary" type="button" (click)="editingId.set(null)">
+            Cancel
+          </button>
+        </div>
+      </form>
+    } @else if (selected(); as c) {
+      <section class="card card-body">
+        <div class="country-head">
+          <div>
+            <span class="eyebrow">{{ c.continent }}</span>
+            <h3>{{ c.name }}</h3>
+          </div>
+          <button class="btn btn-secondary btn-sm" (click)="edit(c)">Edit country</button>
+        </div>
+        <dl class="facts">
+          <dt>Capital</dt>
+          <dd>{{ c.capitalCity ?? '—' }}</dd>
+          <dt>Language</dt>
+          <dd>{{ c.language ?? '—' }}</dd>
+          <dt>Currency</dt>
+          <dd>{{ c.currency ?? '—' }}</dd>
+          <dt>Population</dt>
+          <dd>{{ formatNumber(c.population) }}</dd>
+          <dt>Visa</dt>
+          <dd>{{ c.visa?.type ?? 'Not needed' }}</dd>
+          <dt>Safety</dt>
+          <dd>
+            @if (c.safety) {
+              <app-safety-meter [level]="c.safety.level" [showLabel]="true" />
+            } @else {
+              —
+            }
+          </dd>
+        </dl>
+      </section>
+
+      <section class="card card-body">
+        <div class="country-head">
+          <h3>Destinations</h3>
+          <a
+            class="btn btn-primary btn-sm"
+            routerLink="/admin/destinations/new"
+            [queryParams]="{ countryId: c.id }"
+          >
+            + New destination
+          </a>
+        </div>
+        @if (destinations.hasValue()) {
+          <ul class="destinations">
+            @for (d of destinations.value().items; track d.id) {
+              <li>
+                <span>
+                  <strong>{{ d.name }}</strong>
+                  <span class="muted small"> · {{ d.accommodationsCount }} hotels</span>
+                  @if (!d.isActive) {
+                    <span class="badge badge-danger">hidden</span>
+                  }
+                </span>
+                <span class="links">
+                  <a [routerLink]="['/destinations', d.id]">View</a>
+                  <a class="btn btn-secondary btn-sm" [routerLink]="['/admin/destinations', d.id]"
+                    >Edit</a
+                  >
+                </span>
+              </li>
+            } @empty {
+              <li class="muted">
+                No destinations yet. Add the first one so agencies can sell trips there.
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="skeleton" style="height: 120px"></div>
+        }
+      </section>
+    } @else {
+      <div class="card card-body muted hint">
+        Choose a country to see its destinations, or add a new country. Agencies can sell trips only
+        to destinations that have at least one hotel with rooms.
+      </div>
+    }
+  </div>
+</div>

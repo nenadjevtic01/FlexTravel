@@ -1,0 +1,453 @@
+<div class="container page">
+  <a class="back" routerLink="/admin" [queryParams]="{ tab: 'catalog' }">← Catalog</a>
+
+  @if (!auth.canManageCatalog()) {
+    <div class="card state">
+      <h3>For administrators</h3>
+      <a class="btn btn-primary" routerLink="/login">Sign in</a>
+    </div>
+  } @else if (destination.error()) {
+    <div class="state">
+      <h3>Destination not found</h3>
+    </div>
+  } @else if (options.hasValue() && (isNew() || destination.hasValue())) {
+    @let o = options.value();
+
+    <header class="page-header">
+      <span class="eyebrow">Catalog · {{ countryName(country()) || 'new destination' }}</span>
+      <h1>{{ isNew() ? 'New destination' : name() }}</h1>
+      @if (destination.value(); as d) {
+        <p class="muted">
+          {{ d.hotels.length }} {{ d.hotels.length === 1 ? 'hotel' : 'hotels' }} ·
+          {{ d.sights.length }} {{ d.sights.length === 1 ? 'sight' : 'sights' }} ·
+          {{ d.upcomingTrips }} upcoming {{ d.upcomingTrips === 1 ? 'trip' : 'trips' }} ·
+          @if (d.isActive) {
+            <a [routerLink]="['/destinations', d.id]">View public page</a>
+          } @else {
+            <span class="badge badge-danger">Hidden from the site</span>
+          }
+        </p>
+        <div class="visibility">
+          @if (d.isActive) {
+            <button
+              class="btn btn-secondary btn-sm"
+              [disabled]="saving()"
+              (click)="setDestinationActive(false)"
+            >
+              Hide destination
+            </button>
+          } @else {
+            <button
+              class="btn btn-primary btn-sm"
+              [disabled]="saving()"
+              (click)="setDestinationActive(true)"
+            >
+              Show destination again
+            </button>
+          }
+        </div>
+      }
+    </header>
+
+    @if (notice(); as n) {
+      <p class="alert alert-success">{{ n }}</p>
+    }
+
+    <form class="card card-body section" (submit)="save($event)">
+      <h2>About</h2>
+      <div class="grid">
+        <label class="field">
+          <span>Country</span>
+          <select class="select" (change)="country.set(+$any($event.target).value || null)">
+            <option value="">Choose…</option>
+            @for (c of countries.value() ?? []; track c.id) {
+              <option [value]="c.id" [selected]="c.id === country()">{{ c.name }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          <span>Name</span>
+          <input
+            class="input"
+            maxlength="60"
+            [value]="name()"
+            (input)="name.set($any($event.target).value)"
+          />
+        </label>
+      </div>
+      <label class="field">
+        <span>Description</span>
+        <textarea
+          class="input"
+          rows="4"
+          maxlength="1000"
+          [value]="description()"
+          (input)="description.set($any($event.target).value)"
+        ></textarea>
+      </label>
+      <label class="field">
+        <span>Climate <span class="muted">(optional)</span></span>
+        <textarea
+          class="input"
+          rows="2"
+          maxlength="1000"
+          [value]="climate()"
+          (input)="climate.set($any($event.target).value)"
+        ></textarea>
+      </label>
+
+      <div class="field">
+        <span>Location <span class="muted">(click the map to place the destination)</span></span>
+        <app-map-view
+          [markers]="locationMarker()"
+          [zoom]="locationMarker().length ? 6 : 2"
+          [pickable]="true"
+          height="280px"
+          (picked)="setLocation($event)"
+        />
+        <div class="coords">
+          <input
+            class="input"
+            type="number"
+            step="0.0001"
+            min="-90"
+            max="90"
+            placeholder="Latitude"
+            aria-label="Latitude"
+            [value]="latitude() ?? ''"
+            (input)="latitude.set(numberOrNull($any($event.target).value))"
+          />
+          <input
+            class="input"
+            type="number"
+            step="0.0001"
+            min="-180"
+            max="180"
+            placeholder="Longitude"
+            aria-label="Longitude"
+            [value]="longitude() ?? ''"
+            (input)="longitude.set(numberOrNull($any($event.target).value))"
+          />
+          @if (latitude() !== null || longitude() !== null) {
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              (click)="latitude.set(null); longitude.set(null)"
+            >
+              Clear
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="field">
+        <span
+          >Images
+          <span class="muted"
+            >(the first one is the cover; JPEG, PNG or WebP up to 5 MB)</span
+          ></span
+        >
+        <div class="images">
+          @for (img of images(); track img.src; let i = $index, first = $first, last = $last) {
+            <figure class="image" [class.cover]="first">
+              <img [src]="imageUrl(img.src)" [alt]="img.alt" />
+              @if (first) {
+                <span class="badge cover-badge">Cover</span>
+              }
+              <input
+                class="input alt"
+                maxlength="100"
+                placeholder="Description"
+                [value]="img.alt"
+                (input)="setAlt(i, $any($event.target).value)"
+              />
+              <div class="image-actions">
+                <button
+                  type="button"
+                  [disabled]="first"
+                  aria-label="Move left"
+                  (click)="moveImage(i, -1)"
+                >
+                  ←
+                </button>
+                <button
+                  type="button"
+                  [disabled]="last"
+                  aria-label="Move right"
+                  (click)="moveImage(i, 1)"
+                >
+                  →
+                </button>
+                <button
+                  type="button"
+                  class="danger"
+                  aria-label="Remove image"
+                  (click)="removeImage(i)"
+                >
+                  ×
+                </button>
+              </div>
+            </figure>
+          }
+          <label class="upload">
+            <input
+              #file
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              (change)="upload(file)"
+            />
+            <span>{{ uploading() ? 'Uploading…' : '+ Add images' }}</span>
+          </label>
+        </div>
+      </div>
+
+      @if (!isNew()) {
+        @if (errors().length) {
+          <ul class="alert">
+            @for (e of errors(); track $index) {
+              <li>{{ e }}</li>
+            }
+          </ul>
+        }
+
+        <div>
+          <button class="btn btn-primary" type="submit" [disabled]="saving() || uploading() > 0">
+            {{ saving() ? 'Saving…' : 'Save changes' }}
+          </button>
+        </div>
+      }
+    </form>
+
+    <section class="card card-body section">
+      <div class="section-head">
+        <h2>Hotels</h2>
+        @if (editingHotel() === null) {
+          <button class="btn btn-primary btn-sm" (click)="editingHotel.set(0)">+ New hotel</button>
+        }
+      </div>
+
+      @if (editingHotel() === 0) {
+        <div class="editor">
+          <h3>New hotel</h3>
+          <app-hotel-editor
+            [destinationId]="destination.value()?.id ?? 0"
+            [options]="o"
+            [local]="isNew()"
+            (saved)="hotelSaved()"
+            (localSaved)="saveDraftHotel($event)"
+            (cancelled)="editingHotel.set(null)"
+          />
+        </div>
+      }
+
+      @for (h of hotels(); track h.id) {
+        <article class="hotel">
+          @if (editingHotel() === h.id) {
+            <h3>{{ h.name }}</h3>
+            <app-hotel-editor
+              [destinationId]="destination.value()?.id ?? 0"
+              [options]="o"
+              [hotel]="h"
+              [local]="isNew()"
+              (saved)="hotelSaved()"
+              (localSaved)="saveDraftHotel($event)"
+              (cancelled)="editingHotel.set(null)"
+            />
+          } @else {
+            <div class="hotel-head">
+              <div>
+                <strong>{{ h.name }}</strong>
+                <span class="badge">{{ typeName(h.typeId) }}</span>
+                <app-stars [value]="h.stars" />
+                @if (!isNew()) {
+                  @if (!h.isActive) {
+                    <span class="badge badge-danger">hidden</span>
+                  }
+                  <span class="muted small block"
+                    >On {{ h.trips }} {{ h.trips === 1 ? 'trip' : 'trips'
+                    }}{{ h.upcomingTrips ? ', ' + h.upcomingTrips + ' on sale' : '' }}</span
+                  >
+                }
+              </div>
+              <div class="actions">
+                <button
+                  class="btn btn-secondary btn-sm"
+                  [disabled]="editingHotel() !== null"
+                  (click)="editingHotel.set(h.id)"
+                >
+                  Edit
+                </button>
+                @if (isNew()) {
+                  <button class="btn btn-secondary btn-sm" (click)="removeDraftHotel(h)">
+                    Remove
+                  </button>
+                } @else if (h.isActive) {
+                  <button
+                    class="btn btn-secondary btn-sm"
+                    [disabled]="h.upcomingTrips > 0"
+                    [title]="
+                      h.upcomingTrips
+                        ? 'It is on trips that are on sale'
+                        : 'Not offered for new trips'
+                    "
+                    (click)="setHotelActive(h.id, false)"
+                  >
+                    Hide
+                  </button>
+                } @else {
+                  <button class="btn btn-secondary btn-sm" (click)="setHotelActive(h.id, true)">
+                    Show
+                  </button>
+                }
+              </div>
+            </div>
+            <p class="rooms-summary muted small">
+              @for (r of h.rooms; track r.id; let last = $last) {
+                {{ r.numberOfRooms }} × {{ roomTypeName(r.roomTypeId) }} €{{ r.pricePerNight
+                }}{{ last ? '' : ' · ' }}
+              } @empty {
+                No rooms yet: agencies cannot offer this hotel.
+              }
+            </p>
+          }
+        </article>
+      } @empty {
+        @if (editingHotel() !== 0) {
+          <p class="muted">No hotels yet. Agencies can sell trips here once a hotel has rooms.</p>
+        }
+      }
+    </section>
+
+    <section class="card card-body section">
+      <div class="section-head">
+        <h2>Sights</h2>
+        @if (editingSight() === null) {
+          <button class="btn btn-primary btn-sm" (click)="newSight()">+ New sight</button>
+        }
+      </div>
+
+      @if (editingSight() !== null) {
+        <form class="editor sight-form" (submit)="saveSight($event)">
+          <div class="grid">
+            <label class="field">
+              <span>Name</span>
+              <input
+                class="input"
+                maxlength="100"
+                [value]="sightName()"
+                (input)="sightName.set($any($event.target).value)"
+              />
+            </label>
+            <label class="field">
+              <span>Category</span>
+              <select
+                class="select"
+                (change)="sightCategory.set(+$any($event.target).value || null)"
+              >
+                <option value="">Choose…</option>
+                @for (c of o.attractionCategories; track c.id) {
+                  <option [value]="c.id" [selected]="c.id === sightCategory()">
+                    {{ c.name }}
+                  </option>
+                }
+              </select>
+            </label>
+          </div>
+          <label class="field">
+            <span>Description</span>
+            <textarea
+              class="input"
+              rows="2"
+              maxlength="1000"
+              [value]="sightDescription()"
+              (input)="sightDescription.set($any($event.target).value)"
+            ></textarea>
+          </label>
+          @if (sightErrors().length) {
+            <ul class="alert">
+              @for (e of sightErrors(); track $index) {
+                <li>{{ e }}</li>
+              }
+            </ul>
+          }
+          <div class="actions">
+            <button class="btn btn-primary btn-sm" type="submit">
+              {{ editingSight() ? 'Save sight' : 'Add sight' }}
+            </button>
+            <button class="btn btn-secondary btn-sm" type="button" (click)="editingSight.set(null)">
+              Cancel
+            </button>
+          </div>
+        </form>
+      } @else if (sightErrors().length) {
+        <p class="alert">{{ sightErrors()[0] }}</p>
+      }
+
+      <ul class="sights-list">
+        @for (s of sights(); track s.id) {
+          <li>
+            <div>
+              <strong>{{ s.name }}</strong>
+              <span class="muted small">
+                · {{ categoryName(s.categoryId) }}
+                @if (!isNew()) {
+                  · on {{ s.trips }} {{ s.trips === 1 ? 'trip' : 'trips' }}
+                }
+              </span>
+              <p class="muted small">{{ s.description }}</p>
+            </div>
+            <div class="actions">
+              <button class="btn btn-secondary btn-sm" (click)="editSight(s)">Edit</button>
+              <button
+                class="btn btn-secondary btn-sm"
+                [disabled]="s.trips > 0"
+                [title]="s.trips ? 'Used on trips' : ''"
+                (click)="deleteSight(s)"
+              >
+                {{ isNew() ? 'Remove' : 'Delete' }}
+              </button>
+            </div>
+          </li>
+        } @empty {
+          <li class="muted">
+            No sights yet. Agencies choose sights from this list for their trip programs.
+          </li>
+        }
+      </ul>
+    </section>
+
+    @if (isNew()) {
+      <div class="card card-body section create-bar">
+        @if (errors().length) {
+          <ul class="alert">
+            @for (e of errors(); track $index) {
+              <li>{{ e }}</li>
+            }
+          </ul>
+        }
+        <div class="create-row">
+          <span class="muted small">
+            {{ hotels().length }} {{ hotels().length === 1 ? 'hotel' : 'hotels' }} ·
+            {{ sights().length }} {{ sights().length === 1 ? 'sight' : 'sights' }}
+            · everything is saved together
+          </span>
+          <button
+            class="btn btn-primary"
+            [disabled]="
+              saving() || uploading() > 0 || editingHotel() !== null || editingSight() !== null
+            "
+            (click)="save($event)"
+          >
+            {{ saving() ? 'Creating…' : 'Create destination' }}
+          </button>
+        </div>
+        @if (editingHotel() !== null || editingSight() !== null) {
+          <p class="muted small">Finish the hotel or sight you are editing first.</p>
+        }
+      </div>
+    }
+  } @else {
+    <div class="skeleton" style="height: 420px"></div>
+  }
+</div>

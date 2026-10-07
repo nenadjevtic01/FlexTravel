@@ -1,0 +1,29 @@
+.search-card {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1.2fr 1fr auto;
+  align-items: end;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+}
+.btn {
+  height: 44px;
+  padding: 0 24px;
+}
+@media (max-width: 860px) {
+  .search-card {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  @media (max-width: 480px) {
+    .search-card {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  .where,
+  .btn {
+    grid-column: 1 / -1;
+  }
+}

@@ -1,0 +1,19 @@
+<div class="stepper">
+  <button
+    type="button"
+    [disabled]="value() <= min()"
+    (click)="valueChange.emit(value() - 1)"
+    [attr.aria-label]="'Fewer ' + label()"
+  >
+    −
+  </button>
+  <span class="value" aria-live="polite">{{ value() }}</span>
+  <button
+    type="button"
+    [disabled]="value() >= max()"
+    (click)="valueChange.emit(value() + 1)"
+    [attr.aria-label]="'More ' + label()"
+  >
+    +
+  </button>
+</div>

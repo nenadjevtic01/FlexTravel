@@ -1,0 +1,34 @@
+@if (weather.hasValue() && weather.value().available) {
+  @let w = weather.value();
+  <section class="card card-body weather">
+    <div class="head">
+      <h2>{{ heading() }}</h2>
+      <span class="muted small">
+        @if (w.averageHigh !== null) {
+          Avg. {{ round(w.averageHigh) }}° / {{ round(w.averageLow) }}°
+        }
+        · {{ w.rainyDays }} {{ w.rainyDays === 1 ? 'rainy day' : 'rainy days' }}
+      </span>
+    </div>
+    @if (w.kind === 'LastYear') {
+      <p class="muted small note">
+        The trip is too far ahead for a forecast, so these are the same dates last year.
+      </p>
+    }
+    <ol class="days">
+      @for (d of w.days; track d.date) {
+        <li [title]="d.summary">
+          <span class="date">{{ day(d.date) }}</span>
+          <span class="icon" aria-hidden="true">{{ icon(d.code) }}</span>
+          <span class="sr-only">{{ d.summary }}</span>
+          <strong>{{ round(d.high) }}°</strong>
+          <span class="muted">{{ round(d.low) }}°</span>
+          @if ((d.precipitation ?? 0) >= 1) {
+            <span class="rain">{{ d.precipitation }} mm</span>
+          }
+        </li>
+      }
+    </ol>
+    <p class="muted source">Weather data: {{ w.source }}</p>
+  </section>
+}

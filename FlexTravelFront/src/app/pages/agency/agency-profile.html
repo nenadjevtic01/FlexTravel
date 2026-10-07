@@ -1,0 +1,101 @@
+@if (page.hasValue()) {
+  <form class="card card-body form" (submit)="save($event)">
+    <div class="head">
+      <div class="logo">
+        @if (logo()) {
+          <img [src]="imageUrl(logo())" alt="Logo of the agency" />
+        } @else {
+          <span>{{ page.value().name.charAt(0) }}</span>
+        }
+      </div>
+      <div>
+        <h3>{{ page.value().name }}</h3>
+        <label class="btn btn-secondary btn-sm upload">
+          {{ uploading() ? 'Uploading…' : logo() ? 'Change logo' : 'Upload logo' }}
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            (change)="upload($event)"
+            hidden
+          />
+        </label>
+        @if (logo()) {
+          <button type="button" class="link" (click)="logo.set('')">Remove logo</button>
+        }
+        <p class="muted small">PNG, JPG or WebP up to 5 MB; square images look best.</p>
+      </div>
+      <a class="btn btn-secondary btn-sm view" [routerLink]="['/agencies', agencyId()]"
+        >View public page</a
+      >
+    </div>
+
+    <label class="field wide">
+      <span>About the agency</span>
+      <textarea
+        class="input"
+        rows="5"
+        maxlength="1500"
+        [value]="description()"
+        (input)="description.set($any($event.target).value)"
+      ></textarea>
+    </label>
+    <label class="field">
+      <span>Address</span>
+      <input
+        class="input"
+        maxlength="100"
+        [value]="address()"
+        (input)="address.set($any($event.target).value)"
+      />
+    </label>
+    <label class="field">
+      <span>Phone</span>
+      <input
+        class="input"
+        maxlength="20"
+        [value]="phone()"
+        (input)="phone.set($any($event.target).value)"
+      />
+    </label>
+    <label class="field">
+      <span>E-mail</span>
+      <input
+        class="input"
+        type="email"
+        maxlength="100"
+        [value]="email()"
+        (input)="email.set($any($event.target).value)"
+      />
+    </label>
+    <label class="field">
+      <span>Website</span>
+      <input
+        class="input"
+        maxlength="200"
+        placeholder="https://"
+        [value]="website()"
+        (input)="website.set($any($event.target).value)"
+      />
+    </label>
+
+    @if (errors().length) {
+      <ul class="alert wide">
+        @for (e of errors(); track $index) {
+          <li>{{ e }}</li>
+        }
+      </ul>
+    }
+    @if (saved()) {
+      <p class="alert alert-success wide">The public page is updated.</p>
+    }
+    <div class="wide">
+      <button class="btn btn-primary" type="submit" [disabled]="saving() || uploading()">
+        {{ saving() ? 'Saving…' : 'Save' }}
+      </button>
+    </div>
+  </form>
+} @else if (page.error()) {
+  <p class="alert">The agency profile could not be loaded.</p>
+} @else {
+  <div class="skeleton" style="height: 360px"></div>
+}

@@ -1,0 +1,434 @@
+@if (ready()) {
+  @let o = options.value()!;
+  <form class="card card-body form" (submit)="submit($event)">
+    @if (existing.hasValue()) {
+      @let t = existing.value();
+      <div class="info span-2">
+        <div>
+          <strong>{{ t.destination }}</strong>
+          <span class="muted">
+            · created by {{ t.createdBy ?? 'unknown' }} on {{ formatDate(t.createdAt) }}
+            @if (t.updatedBy && t.updatedAt) {
+              · last edited by {{ t.updatedBy }}, {{ formatDateTime(t.updatedAt) }}
+            }
+          </span>
+        </div>
+        @if (t.activeReservations) {
+          <p class="lock">
+            🔒 {{ t.activeReservations }} active reservation(s), {{ t.seatsBooked }} seats sold:
+            dates cannot move, seats cannot go below {{ t.seatsBooked }}, and hotels with bookings
+            stay on the trip. A new price applies only to new bookings.
+          </p>
+        }
+        @if (t.priceHistory.length > 1) {
+          <p class="muted small">
+            Price history:
+            @for (p of t.priceHistory; track p.validFrom; let last = $last) {
+              {{ formatMoney(p.price) }} from {{ formatDate(p.validFrom) }}{{ last ? '' : ' · ' }}
+            }
+          </p>
+        }
+      </div>
+    }
+
+    <div class="field span-2">
+      <label for="name">Trip name</label>
+      <input
+        id="name"
+        class="input"
+        maxlength="100"
+        placeholder="e.g. Crete Autumn Escape"
+        [value]="name()"
+        (input)="name.set($any($event.target).value)"
+      />
+    </div>
+    <div class="field span-2">
+      <label for="description">Description</label>
+      <textarea
+        id="description"
+        class="input"
+        rows="3"
+        maxlength="1000"
+        [value]="description()"
+        (input)="description.set($any($event.target).value)"
+      ></textarea>
+    </div>
+
+    <div class="field">
+      <label for="country">Country</label>
+      <select
+        id="country"
+        class="select"
+        [disabled]="isEdit()"
+        (change)="chooseCountry($any($event.target).value)"
+      >
+        <option value="">Choose…</option>
+        @for (c of countries(); track c) {
+          <option [value]="c" [selected]="c === country()">{{ c }}</option>
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label for="destination">Destination</label>
+      <select
+        id="destination"
+        class="select"
+        [disabled]="isEdit() || !country()"
+        (change)="chooseDestination($any($event.target).value)"
+      >
+        <option value="">{{ country() ? 'Choose…' : 'Choose a country first' }}</option>
+        @for (d of countryDestinations(); track d.id) {
+          <option [value]="d.id" [selected]="d.id === destinationId()">{{ d.name }}</option>
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label for="transport">Transport</label>
+      <select
+        id="transport"
+        class="select"
+        (change)="transportId.set(numberValue($any($event.target).value))"
+      >
+        <option value="">Choose…</option>
+        @for (t of o.transports; track t.id) {
+          <option [value]="t.id" [selected]="t.id === transportId()">{{ t.name }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="start">Departure</label>
+      <input
+        id="start"
+        class="input"
+        type="date"
+        [min]="minDate"
+        [disabled]="datesLocked()"
+        [value]="startDate()"
+        (input)="startDate.set($any($event.target).value)"
+      />
+    </div>
+    <div class="field">
+      <label for="end">Return</label>
+      <input
+        id="end"
+        class="input"
+        type="date"
+        [min]="startDate() || minDate"
+        [disabled]="datesLocked()"
+        [value]="endDate()"
+        (input)="endDate.set($any($event.target).value)"
+      />
+      @if (nights()) {
+        <small class="muted">{{ nights() }} nights</small>
+      }
+    </div>
+
+    <div class="field">
+      <label for="capacity">Seats</label>
+      <input
+        id="capacity"
+        class="input"
+        type="number"
+        [min]="existing.value()?.seatsBooked || 1"
+        max="500"
+        [value]="capacity()"
+        (input)="capacity.set(toNumber($any($event.target).value))"
+      />
+    </div>
+    <div class="field">
+      <label for="price">Price per person (€, without hotel)</label>
+      <input
+        id="price"
+        class="input"
+        type="number"
+        min="1"
+        [value]="price()"
+        (input)="price.set(toNumber($any($event.target).value))"
+      />
+    </div>
+    <div class="field">
+      <label for="discount">Child discount (%)</label>
+      <input
+        id="discount"
+        class="input"
+        type="number"
+        min="0"
+        max="100"
+        [value]="childDiscount()"
+        (input)="childDiscount.set(toNumber($any($event.target).value))"
+      />
+    </div>
+
+    <fieldset class="span-2 discounts">
+      <legend>Discounts <span class="muted">(optional, on the whole price)</span></legend>
+      <div class="discount-row">
+        <label class="field">
+          <span>Early booking %</span>
+          <input
+            class="input"
+            type="number"
+            min="0"
+            max="50"
+            [value]="earlyPercent()"
+            (input)="earlyPercent.set(toNumber($any($event.target).value))"
+          />
+        </label>
+        <label class="field">
+          <span>for bookings until</span>
+          <input
+            class="input"
+            type="date"
+            [max]="startDate()"
+            [disabled]="!earlyPercent()"
+            [value]="earlyUntil()"
+            (change)="earlyUntil.set($any($event.target).value)"
+          />
+        </label>
+      </div>
+      <div class="discount-row">
+        <label class="field">
+          <span>Last minute %</span>
+          <input
+            class="input"
+            type="number"
+            min="0"
+            max="50"
+            [value]="lastMinutePercent()"
+            (input)="lastMinutePercent.set(toNumber($any($event.target).value))"
+          />
+        </label>
+        <label class="field">
+          <span>in the last … days before departure</span>
+          <input
+            class="input"
+            type="number"
+            min="1"
+            max="60"
+            [disabled]="!lastMinutePercent()"
+            [value]="lastMinuteDays()"
+            (input)="lastMinuteDays.set(toNumber($any($event.target).value))"
+          />
+        </label>
+      </div>
+      <p class="muted small">
+        Customers also get a promo code discount on top if they have one. Changes apply only to new
+        bookings.
+      </p>
+    </fieldset>
+
+    <fieldset class="span-2">
+      <legend>Hotels offered</legend>
+      @if (destination(); as d) {
+        @for (a of d.accommodations; track a.id) {
+          <label class="check">
+            <input
+              type="checkbox"
+              [checked]="hotelIds().includes(a.id)"
+              [disabled]="lockedHotels().includes(a.id)"
+              (change)="toggleHotel(a.id, $any($event.target).checked)"
+            />
+            {{ a.name }}
+            <span class="muted">· {{ a.type }} · {{ a.stars }}★ · {{ a.rooms }} rooms</span>
+            @if (lockedHotels().includes(a.id)) {
+              <span class="badge">has bookings</span>
+            }
+          </label>
+        }
+      } @else {
+        <p class="muted">Choose a destination to see its hotels.</p>
+      }
+    </fieldset>
+
+    <fieldset class="span-2">
+      <legend>Sights on the program</legend>
+      @if (destination(); as d) {
+        @for (a of d.attractions; track a.id) {
+          <label class="check">
+            <input
+              type="checkbox"
+              [checked]="attractionIds().includes(a.id)"
+              (change)="toggleAttraction(a.id, $any($event.target).checked)"
+            />
+            {{ a.name }}
+            <span class="muted">· {{ a.category }}</span>
+          </label>
+        } @empty {
+          <p class="muted">No sights have been entered for {{ d.name }} yet.</p>
+        }
+      } @else {
+        <p class="muted">Choose a destination to see its sights.</p>
+      }
+    </fieldset>
+
+    <fieldset class="span-2">
+      <legend>Program day by day</legend>
+      <p class="muted small hint">
+        Leave a day empty for a free day. Meals are those included in the price.
+      </p>
+      @for (day of itinerary(); track $index; let i = $index) {
+        <div class="day">
+          <div class="day-head">
+            <span class="day-label">Day {{ i + 1 }}</span>
+            <input
+              class="input"
+              maxlength="100"
+              placeholder="Title, e.g. Arrival in Rome"
+              [value]="day.title ?? ''"
+              (input)="setDay(i, 'title', $any($event.target).value)"
+            />
+            @if (itinerary().length > 1) {
+              <button type="button" class="remove" aria-label="Remove day" (click)="removeDay(i)">
+                ×
+              </button>
+            }
+          </div>
+          <textarea
+            class="input"
+            rows="2"
+            maxlength="1000"
+            placeholder="What happens on this day?"
+            [value]="day.activity ?? ''"
+            (input)="setDay(i, 'activity', $any($event.target).value)"
+          ></textarea>
+          <div class="day-extra">
+            <span class="meals">
+              <label class="check">
+                <input
+                  type="checkbox"
+                  [checked]="day.breakfast"
+                  (change)="setDay(i, 'breakfast', $any($event.target).checked)"
+                />
+                Breakfast
+              </label>
+              <label class="check">
+                <input
+                  type="checkbox"
+                  [checked]="day.lunch"
+                  (change)="setDay(i, 'lunch', $any($event.target).checked)"
+                />
+                Lunch
+              </label>
+              <label class="check">
+                <input
+                  type="checkbox"
+                  [checked]="day.dinner"
+                  (change)="setDay(i, 'dinner', $any($event.target).checked)"
+                />
+                Dinner
+              </label>
+            </span>
+            <input
+              class="input overnight"
+              maxlength="100"
+              placeholder="Overnight in… (empty on the last day)"
+              [value]="day.overnight ?? ''"
+              (input)="setDay(i, 'overnight', $any($event.target).value)"
+            />
+          </div>
+        </div>
+      }
+      <button type="button" class="btn btn-secondary btn-sm" (click)="addDay()">+ Add day</button>
+    </fieldset>
+
+    <fieldset class="span-2">
+      <legend>Extras customers can add</legend>
+      <p class="muted small hint">
+        Sold with the trip and added to the price after discounts. Changes apply to new bookings
+        only; a removed extra stays on reservations that already have it.
+      </p>
+      @for (extra of extras(); track $index; let i = $index) {
+        <div class="extra">
+          <select
+            class="select"
+            aria-label="Kind"
+            (change)="setExtra(i, 'kind', $any($event.target).value)"
+          >
+            @for (k of extraKinds; track k.value) {
+              <option [value]="k.value" [selected]="k.value === extra.kind">{{ k.label }}</option>
+            }
+          </select>
+          <input
+            class="input"
+            maxlength="100"
+            placeholder="Name"
+            aria-label="Name"
+            [value]="extra.name"
+            (input)="setExtra(i, 'name', $any($event.target).value)"
+          />
+          <label class="price">
+            <span>€</span>
+            <input
+              class="input"
+              type="number"
+              min="1"
+              step="1"
+              aria-label="Price in euros"
+              [value]="extra.price"
+              (input)="setExtra(i, 'price', toNumber($any($event.target).value))"
+            />
+          </label>
+          <select
+            class="select"
+            aria-label="Price is"
+            (change)="setExtra(i, 'perPerson', $any($event.target).value === 'person')"
+          >
+            <option value="person" [selected]="extra.perPerson">per traveler</option>
+            <option value="booking" [selected]="!extra.perPerson">per booking</option>
+          </select>
+          <button type="button" class="remove" aria-label="Remove extra" (click)="removeExtra(i)">
+            ×
+          </button>
+          <input
+            class="input description"
+            maxlength="300"
+            placeholder="What is included (optional)"
+            aria-label="Description"
+            [value]="extra.description ?? ''"
+            (input)="setExtra(i, 'description', $any($event.target).value)"
+          />
+        </div>
+      } @empty {
+        <p class="muted small">No extras yet.</p>
+      }
+      <div class="extra-actions">
+        <button type="button" class="btn btn-secondary btn-sm" (click)="addExtra('Insurance')">
+          + Insurance
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="addExtra('Transfer')">
+          + Transfer
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="addExtra('Excursion')">
+          + Excursion
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="addExtra('Other')">
+          + Other
+        </button>
+      </div>
+    </fieldset>
+
+    @if (errors().length) {
+      <ul class="alert span-2">
+        @for (e of errors(); track $index) {
+          <li>{{ e }}</li>
+        }
+      </ul>
+    }
+
+    <div class="span-2">
+      <button class="btn btn-primary" type="submit" [disabled]="submitting()">
+        @if (isEdit()) {
+          {{ submitting() ? 'Saving…' : 'Save changes' }}
+        } @else {
+          {{ submitting() ? 'Publishing…' : 'Publish trip' }}
+        }
+      </button>
+    </div>
+  </form>
+} @else if (options.error() || existing.error()) {
+  <p class="alert">
+    {{ existing.error() ? 'This trip cannot be edited.' : 'The form could not be loaded.' }}
+  </p>
+} @else {
+  <div class="skeleton" style="height: 420px"></div>
+}

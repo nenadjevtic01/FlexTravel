@@ -1,0 +1,462 @@
+<div class="container page">
+  @if (!auth.isAdmin()) {
+    <div class="card state">
+      <h3>Administrators only</h3>
+      <p>Sign in with the administrator account.</p>
+      <a class="btn btn-primary" routerLink="/login" [queryParams]="{ returnUrl: '/admin' }"
+        >Sign in</a
+      >
+    </div>
+  } @else {
+    <header class="page-header head">
+      <div>
+        <span class="eyebrow">Administration</span>
+        <h1>Admin panel</h1>
+      </div>
+      @if (auth.canSeeAuditLog()) {
+        <a class="btn btn-secondary" routerLink="/activity">Audit log →</a>
+      }
+    </header>
+
+    <nav class="tabs">
+      <button [class.active]="tab() === 'overview'" (click)="selectTab('overview')">
+        Overview
+      </button>
+      <button [class.active]="tab() === 'users'" (click)="selectTab('users')">Users</button>
+      <button [class.active]="tab() === 'agencies'" (click)="selectTab('agencies')">
+        Agencies
+      </button>
+      <button [class.active]="tab() === 'catalog'" (click)="selectTab('catalog')">Catalog</button>
+      <button [class.active]="tab() === 'reviews'" (click)="selectTab('reviews')">Reviews</button>
+      <button [class.active]="tab() === 'system'" (click)="selectTab('system')">
+        Jobs &amp; rates
+      </button>
+    </nav>
+
+    @if (notice(); as n) {
+      <p class="alert alert-success">{{ n }}</p>
+    }
+
+    @switch (tab()) {
+      @case ('overview') {
+        @if (stats.hasValue()) {
+          @let s = stats.value();
+          <div class="tiles">
+            <div class="card tile">
+              <span class="label">Confirmed revenue</span>
+              <strong>{{ formatMoney(s.confirmedRevenue) }}</strong>
+              <span class="muted small"
+                >+ {{ formatMoney(s.pendingValue) }} awaiting confirmation ·
+                {{ formatMoney(s.collectedPayments) }} collected</span
+              >
+            </div>
+            <div class="card tile">
+              <span class="label">Reservations</span>
+              <strong>{{ s.reservationsConfirmed + s.reservationsPending }}</strong>
+              <span class="muted small">
+                {{ s.reservationsConfirmed }} confirmed · {{ s.reservationsPending }} pending ·
+                {{ s.reservationsCancelled }} cancelled · {{ s.reservationsRejected }} rejected
+              </span>
+            </div>
+            <div class="card tile">
+              <span class="label">Trips on sale</span>
+              <strong>{{ s.tripsOnSale }}</strong>
+              <span class="muted small">from {{ s.agencies }} agencies</span>
+            </div>
+            <div class="card tile">
+              <span class="label">Users</span>
+              <strong>{{ s.customers + s.agencyEmployees + s.admins }}</strong>
+              <span class="muted small">
+                {{ s.customers }} customers · {{ s.agencyEmployees }} agency staff ·
+                {{ s.admins }} admin
+                @if (s.blockedUsers) {
+                  · {{ s.blockedUsers }} blocked
+                }
+              </span>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <section class="card card-body">
+              <h3>Reservations per month</h3>
+              <p class="muted small">
+                Active reservations by booking date, last 6 months. Hover a bar for the value.
+              </p>
+              <app-monthly-chart [data]="s.bookingsByMonth" />
+            </section>
+
+            <section class="card card-body">
+              <h3>Most booked destinations</h3>
+              <ol class="ranking">
+                @for (d of s.topDestinations; track d.destination) {
+                  <li>
+                    <span>
+                      <strong>{{ d.destination }}</strong>
+                      <span class="muted small"> · {{ d.country }}</span>
+                    </span>
+                    <span class="small"
+                      >{{ d.travelers }} travelers · {{ d.reservations }} res.</span
+                    >
+                  </li>
+                } @empty {
+                  <li class="muted">No reservations yet.</li>
+                }
+              </ol>
+            </section>
+          </div>
+
+          <section class="card card-body">
+            <h3>Agencies</h3>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Agency</th>
+                  <th>Trips on sale</th>
+                  <th>Active reservations</th>
+                  <th>Rating</th>
+                  <th>Confirmed revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (a of s.agencyResults; track a.agency) {
+                  <tr>
+                    <td>
+                      <strong>{{ a.agency }}</strong>
+                    </td>
+                    <td>{{ a.trips }}</td>
+                    <td>{{ a.reservations }}</td>
+                    <td>
+                      @if (a.reviews) {
+                        <app-rating [average]="a.rating" [count]="a.reviews" />
+                      } @else {
+                        <span class="muted">—</span>
+                      }
+                    </td>
+                    <td>
+                      <div class="revenue">
+                        <span class="bar"
+                          ><span [style.width.%]="percent(a.revenue, maxAgencyRevenue())"></span
+                        ></span>
+                        {{ formatMoney(a.revenue) }}
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </section>
+        } @else if (stats.error(); as e) {
+          <p class="alert">{{ errorText(e) }}</p>
+        } @else {
+          <div class="skeleton" style="height: 360px"></div>
+        }
+      }
+
+      @case ('users') {
+        <div class="toolbar">
+          <input
+            class="input search"
+            type="search"
+            placeholder="Name or email…"
+            (input)="onKeyword($any($event.target).value)"
+          />
+          <p class="muted small">
+            Customer accounts. Agency employees are managed with their agency in the Agencies tab.
+          </p>
+        </div>
+
+        @if (selectedUserId(); as id) {
+          <app-user-editor
+            [userId]="id"
+            (changed)="users.reload()"
+            (closed)="selectedUserId.set(null)"
+          />
+        }
+
+        @if (users.hasValue()) {
+          @let result = users.value();
+          <div class="card table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>City</th>
+                  <th>Status</th>
+                  <th>Member since</th>
+                  <th>Permissions</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (u of result.items; track u.id) {
+                  <tr [class.selected]="u.id === selectedUserId()" [class.inactive]="!u.isActive">
+                    <td>
+                      <div class="person">
+                        <app-avatar [src]="u.avatar" [name]="u.name" [size]="34" />
+                        <div>
+                          <strong>{{ u.name }}</strong>
+                          <span class="muted small block">{{ u.email }}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{{ u.city }}</td>
+                    <td>
+                      @if (u.isActive) {
+                        <span class="badge badge-success">Active</span>
+                      } @else {
+                        <span class="badge badge-danger">Blocked</span>
+                      }
+                    </td>
+                    <td class="nowrap">{{ formatDate(u.createdAt) }}</td>
+                    <td>{{ u.useCases }} use cases</td>
+                    <td>
+                      <button class="btn btn-secondary btn-sm" (click)="selectedUserId.set(u.id)">
+                        Manage
+                      </button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6" class="state">No customers match.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <app-pagination
+            [page]="result.currentPage"
+            [pagesCount]="result.pagesCount"
+            (pageChange)="userPage.set($event)"
+          />
+        } @else {
+          <div class="skeleton" style="height: 300px"></div>
+        }
+      }
+
+      @case ('catalog') {
+        <app-catalog />
+      }
+
+      @case ('system') {
+        <app-admin-system />
+      }
+
+      @case ('reviews') {
+        <div class="chips review-filter">
+          <button class="chip" [class.active]="!hiddenOnly()" (click)="hiddenOnly.set(false)">
+            All reviews
+          </button>
+          <button class="chip" [class.active]="hiddenOnly()" (click)="hiddenOnly.set(true)">
+            Hidden
+          </button>
+        </div>
+        <p class="muted small">
+          Hide reviews with advertising, personal data or insults. Hidden reviews do not count in
+          ratings, and the customer sees the reason.
+        </p>
+        <section class="card card-body">
+          @if (hiddenOnly()) {
+            <app-review-list
+              [filter]="{ includeHidden: true, hiddenOnly: true }"
+              mode="admin"
+              [showTrip]="true"
+              [perPage]="10"
+              emptyText="No hidden reviews."
+            />
+          } @else {
+            <app-review-list
+              [filter]="{ includeHidden: true }"
+              mode="admin"
+              [showTrip]="true"
+              [perPage]="10"
+            />
+          }
+        </section>
+      }
+
+      @case ('agencies') {
+        <form class="card card-body new-agency" (submit)="createAgency($event)">
+          <h3>New partner agency</h3>
+          <div class="row">
+            <input
+              class="input"
+              placeholder="Agency name"
+              [value]="newAgency().name"
+              (input)="setAgencyField('name', $any($event.target).value)"
+            />
+            <input
+              class="input"
+              placeholder="Address, city"
+              [value]="newAgency().address"
+              (input)="setAgencyField('address', $any($event.target).value)"
+            />
+            <input
+              class="input"
+              placeholder="Phone"
+              [value]="newAgency().phone"
+              (input)="setAgencyField('phone', $any($event.target).value)"
+            />
+            <button class="btn btn-primary" type="submit" [disabled]="busy()">Create agency</button>
+          </div>
+        </form>
+
+        @if (formErrors().length) {
+          <ul class="alert errors">
+            @for (e of formErrors(); track $index) {
+              <li>{{ e }}</li>
+            }
+          </ul>
+        }
+
+        @if (agencies.hasValue()) {
+          @for (a of agencies.value(); track a.id) {
+            <article class="card agency">
+              <header>
+                <div>
+                  <h3>{{ a.name }}</h3>
+                  <p class="muted small">{{ a.address }} · {{ a.phone }}</p>
+                </div>
+                <dl class="numbers">
+                  <div>
+                    <dt>Trips</dt>
+                    <dd>{{ a.tripsOnSale }} / {{ a.trips }}</dd>
+                  </div>
+                  <div>
+                    <dt>Reservations</dt>
+                    <dd>{{ a.reservations }}</dd>
+                  </div>
+                  <div>
+                    <dt>Revenue</dt>
+                    <dd>{{ formatMoney(a.revenue) }}</dd>
+                  </div>
+                </dl>
+              </header>
+
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Trips published</th>
+                    <th>Reservations handled</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (e of a.employees; track e.id) {
+                    <tr
+                      [class.selected]="e.id === selectedEmployeeId()"
+                      [class.inactive]="!e.isActive"
+                    >
+                      <td>
+                        <div class="person">
+                          <app-avatar [src]="e.avatar" [name]="e.name" [size]="34" />
+                          <div>
+                            <strong>{{ e.name }}</strong
+                            ><span class="muted small block">{{ e.email }}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td>{{ e.tripsCreated }}</td>
+                      <td>{{ e.reservationsHandled }}</td>
+                      <td>
+                        @if (e.isActive) {
+                          <span class="badge badge-success">Active</span>
+                        } @else {
+                          <span class="badge badge-danger">Blocked</span>
+                        }
+                      </td>
+                      <td>
+                        <button
+                          class="btn btn-secondary btn-sm"
+                          (click)="selectedEmployeeId.set(e.id)"
+                        >
+                          Manage
+                        </button>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="5" class="muted">No employees yet.</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+
+              @if (employeeOf(a); as id) {
+                <div class="employee-editor">
+                  <app-user-editor
+                    [userId]="id"
+                    (changed)="agencies.reload()"
+                    (closed)="selectedEmployeeId.set(null)"
+                  />
+                </div>
+              }
+
+              @if (addingEmployeeTo() === a.id) {
+                <form class="employee-form" (submit)="createEmployee($event, a)">
+                  <input
+                    class="input"
+                    placeholder="First name"
+                    (input)="setEmployeeField('firstName', $any($event.target).value)"
+                  />
+                  <input
+                    class="input"
+                    placeholder="Last name"
+                    (input)="setEmployeeField('lastName', $any($event.target).value)"
+                  />
+                  <input
+                    class="input"
+                    type="email"
+                    placeholder="Email (sign-in)"
+                    (input)="setEmployeeField('email', $any($event.target).value)"
+                  />
+                  <input
+                    class="input"
+                    type="password"
+                    placeholder="Initial password"
+                    autocomplete="new-password"
+                    (input)="setEmployeeField('password', $any($event.target).value)"
+                  />
+                  <input
+                    class="input"
+                    placeholder="Phone"
+                    (input)="setEmployeeField('phone', $any($event.target).value)"
+                  />
+                  <input
+                    class="input"
+                    placeholder="Address"
+                    (input)="setEmployeeField('address', $any($event.target).value)"
+                  />
+                  <input
+                    class="input"
+                    placeholder="City"
+                    (input)="setEmployeeField('city', $any($event.target).value)"
+                  />
+                  <div class="form-actions">
+                    <button class="btn btn-primary btn-sm" type="submit" [disabled]="busy()">
+                      Create account
+                    </button>
+                    <button
+                      class="btn btn-secondary btn-sm"
+                      type="button"
+                      (click)="addingEmployeeTo.set(null)"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              } @else {
+                <button class="btn btn-secondary btn-sm add" (click)="startAddingEmployee(a.id)">
+                  + Add employee
+                </button>
+              }
+            </article>
+          }
+        } @else {
+          <div class="skeleton" style="height: 300px"></div>
+        }
+      }
+    }
+  }
+</div>

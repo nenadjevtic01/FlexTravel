@@ -1,0 +1,178 @@
+@if (user.hasValue()) {
+  @let u = user.value();
+  <section class="card editor">
+    <header>
+      <div class="who">
+        <app-avatar [src]="u.avatar" [name]="u.name" [size]="56" />
+        <div>
+          <h3>{{ u.name }}</h3>
+          <p class="muted small">
+            {{ roleLabel(u.role) }}{{ u.agency ? ' · ' + u.agency : '' }} · {{ u.email }} ·
+            {{ u.phone }} · {{ u.city }} · member since {{ formatDate(u.createdAt) }}
+          </p>
+          <p class="small">
+            @if (u.role === 'Customer') {
+              {{ u.reservations }} reservations
+            }
+            @if (u.role === 'AgencyEmployee') {
+              {{ u.tripsCreated }} trips published
+            }
+            @if (!u.isActive) {
+              <span class="badge badge-danger">blocked</span>
+            }
+            @if (u.lockedUntil) {
+              <span
+                class="badge badge-danger"
+                title="Too many wrong passwords; unblocking lifts the lock"
+              >
+                locked until {{ formatDateTime(u.lockedUntil) }}
+              </span>
+            }
+          </p>
+          @if (u.avatar && auth.canRemoveAvatars()) {
+            <button class="link danger" [disabled]="saving()" (click)="removeAvatar(u)">
+              Remove profile photo
+            </button>
+          }
+        </div>
+      </div>
+      <button class="close" aria-label="Close" (click)="closed.emit()">×</button>
+    </header>
+
+    @if (auth.canEditUsers()) {
+      <h4>Account details</h4>
+      <form class="details" (submit)="saveDetails($event, u)">
+        <label>
+          <span>First name</span>
+          <input
+            class="input"
+            maxlength="50"
+            [value]="form().firstName"
+            (input)="setField('firstName', $any($event.target).value)"
+          />
+        </label>
+        <label>
+          <span>Last name</span>
+          <input
+            class="input"
+            maxlength="50"
+            [value]="form().lastName"
+            (input)="setField('lastName', $any($event.target).value)"
+          />
+        </label>
+        <label>
+          <span>E-mail (sign-in)</span>
+          <input
+            class="input"
+            type="email"
+            maxlength="254"
+            [value]="form().email"
+            (input)="setField('email', $any($event.target).value)"
+          />
+        </label>
+        <label>
+          <span>Phone</span>
+          <input
+            class="input"
+            maxlength="20"
+            [value]="form().phone"
+            (input)="setField('phone', $any($event.target).value)"
+          />
+        </label>
+        <label>
+          <span>Address</span>
+          <input
+            class="input"
+            maxlength="100"
+            [value]="form().address"
+            (input)="setField('address', $any($event.target).value)"
+          />
+        </label>
+        <label>
+          <span>City</span>
+          <input
+            class="input"
+            maxlength="50"
+            [value]="form().city"
+            (input)="setField('city', $any($event.target).value)"
+          />
+        </label>
+        <div class="details-actions">
+          <button
+            class="btn btn-primary btn-sm"
+            type="submit"
+            [disabled]="saving() || !detailsDirty()"
+          >
+            Save details
+          </button>
+          @if (detailsSaved()) {
+            <span class="saved">✓ Details saved</span>
+          }
+        </div>
+      </form>
+      @if (detailErrors().length) {
+        <ul class="alert">
+          @for (e of detailErrors(); track $index) {
+            <li>{{ e }}</li>
+          }
+        </ul>
+      }
+    }
+
+    <h4>
+      Permissions
+      <span class="muted small"
+        >({{ selected().length }} of {{ u.allUseCases.length }} use cases)</span
+      >
+    </h4>
+    <p class="muted small">
+      Each permission is a backend use case. Changes take effect within 15 minutes, when the user's
+      session is refreshed.
+    </p>
+
+    <div class="use-cases">
+      @for (uc of u.allUseCases; track uc.id) {
+        <label class="use-case" [class.default]="u.defaultUseCaseIds.includes(uc.id)">
+          <input
+            type="checkbox"
+            [checked]="selected().includes(uc.id)"
+            (change)="toggle(uc.id, $any($event.target).checked)"
+          />
+          <span>
+            <strong>{{ uc.id }}. {{ uc.name }}</strong>
+            <span class="muted small block">{{ uc.description }}</span>
+          </span>
+        </label>
+      }
+    </div>
+
+    @if (error(); as e) {
+      <p class="alert">{{ e }}</p>
+    }
+    @if (savedMessage()) {
+      <p class="alert alert-success">Permissions saved.</p>
+    }
+
+    <div class="actions">
+      <button class="btn btn-primary btn-sm" [disabled]="saving() || !dirty()" (click)="save(u)">
+        {{ saving() ? 'Saving…' : 'Save permissions' }}
+      </button>
+      <button class="btn btn-secondary btn-sm" (click)="resetToDefaults(u)">
+        Reset to {{ roleLabel(u.role).toLowerCase() }} defaults
+      </button>
+      @if (u.id !== auth.user()?.id) {
+        <button
+          class="btn btn-secondary btn-sm danger"
+          [disabled]="saving()"
+          (click)="toggleActive(u)"
+        >
+          {{ u.isActive ? 'Block account' : 'Unblock account' }}
+        </button>
+      }
+    </div>
+  </section>
+} @else if (user.error(); as e) {
+  <p class="alert">{{ errorText(e) }}</p>
+} @else {
+  <div class="skeleton" style="height: 320px"></div>
+}

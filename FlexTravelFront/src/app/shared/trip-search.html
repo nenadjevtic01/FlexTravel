@@ -1,0 +1,58 @@
+<form class="search-card" [class.compact]="compact()" (submit)="search($event)">
+  <div class="field where">
+    <label for="ts-destination">Where to?</label>
+    <select
+      id="ts-destination"
+      class="select"
+      (change)="destinationId.set(toNumber($any($event.target).value))"
+    >
+      <option value="">Anywhere</option>
+      @for (group of groups(); track group.country) {
+        <optgroup [label]="group.country">
+          @for (d of group.destinations; track d.id) {
+            <option [value]="d.id" [selected]="d.id === destinationId()">
+              {{ d.name }} ({{ d.trips }})
+            </option>
+          }
+        </optgroup>
+      }
+    </select>
+  </div>
+  <div class="field">
+    <label for="ts-from">Departure from</label>
+    <input
+      id="ts-from"
+      class="input"
+      type="date"
+      [min]="today"
+      [value]="dateFrom()"
+      (input)="dateFrom.set($any($event.target).value)"
+    />
+  </div>
+  <div class="field">
+    <label for="ts-to">Departure until</label>
+    <input
+      id="ts-to"
+      class="input"
+      type="date"
+      [min]="dateFrom() || today"
+      [value]="dateTo()"
+      (input)="dateTo.set($any($event.target).value)"
+    />
+  </div>
+  <div class="field travelers">
+    <label for="ts-travelers">Travelers</label>
+    <select
+      id="ts-travelers"
+      class="select"
+      (change)="travelers.set(toNumber($any($event.target).value))"
+    >
+      @for (n of travelerOptions; track n) {
+        <option [value]="n" [selected]="n === travelers()">
+          {{ n }} {{ n === 1 ? 'person' : 'people' }}
+        </option>
+      }
+    </select>
+  </div>
+  <button class="btn btn-primary" type="submit">Search trips</button>
+</form>

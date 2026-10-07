@@ -1,0 +1,90 @@
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+.big {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  margin-right: 6px;
+}
+.big::before {
+  content: '★ ';
+  color: var(--color-gold);
+  font-size: 1.3rem;
+}
+.reviews {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.reviews.reloading {
+  opacity: 0.6;
+}
+.review {
+  padding: 16px 0;
+  border-top: 1px solid var(--color-border);
+}
+.review.hidden {
+  opacity: 0.75;
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.who {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.trip {
+  margin: 8px 0 0;
+}
+.scores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 10px 0 6px;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+.comment {
+  margin: 0 0 10px;
+  overflow-wrap: anywhere;
+}
+.reply {
+  margin: 0 0 10px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--color-primary);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--color-primary-soft);
+  font-size: 0.9rem;
+}
+.reply p {
+  margin: 4px 0 0;
+}
+.moderation {
+  color: var(--color-danger);
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+}
+.small {
+  font-size: 0.82rem;
+}
+.empty {
+  margin: 0;
+}
+.alert {
+  margin-top: 8px;
+}

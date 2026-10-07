@@ -1,0 +1,17 @@
+namespace FlexTravel.Domain
+{
+    public class RefreshToken
+    {
+        public int RefreshTokenId { get; set; }
+        public int UserId { get; set; }
+        public string TokenHash { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime ExpiresAt { get; set; }
+        public DateTime? RevokedAt { get; set; }
+        public bool WasReplaced { get; set; }
+
+        public bool RememberMe { get; set; }
+
+        public virtual User User { get; set; }
+    }
+}

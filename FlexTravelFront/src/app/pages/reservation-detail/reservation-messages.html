@@ -1,0 +1,40 @@
+<h3>Messages</h3>
+<p class="muted small">{{ hint() }}</p>
+
+<div class="thread" #thread>
+  @if (messages.hasValue()) {
+    @for (m of messages.value(); track m.id) {
+      <div class="message" [class.mine]="m.isMine">
+        <p>{{ m.text }}</p>
+        <span class="meta">
+          <app-avatar [src]="m.senderAvatar" [name]="m.sender" [size]="20" />
+          {{ m.sender }}{{ m.fromAgency && !m.isMine ? ' (' + agency() + ')' : '' }} ·
+          {{ formatDateTime(m.sentAt) }}
+          @if (m.isMine && m.isRead) {
+            · seen
+          }
+        </span>
+      </div>
+    } @empty {
+      <p class="muted small empty">No messages yet.</p>
+    }
+  }
+</div>
+
+<div class="compose">
+  <textarea
+    class="input"
+    rows="2"
+    maxlength="2000"
+    placeholder="Write a message…"
+    [value]="text()"
+    (input)="text.set($any($event.target).value)"
+    (keydown.control.enter)="send()"
+  ></textarea>
+  <button class="btn btn-primary btn-sm" [disabled]="busy() || !text().trim()" (click)="send()">
+    Send
+  </button>
+</div>
+@if (error(); as e) {
+  <p class="alert">{{ e }}</p>
+}

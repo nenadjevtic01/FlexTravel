@@ -1,0 +1,81 @@
+<div class="toolbar">
+  <button class="btn btn-secondary btn-sm" aria-label="Previous month" (click)="move(-1)">‹</button>
+  <h2>{{ title() }}</h2>
+  <button class="btn btn-secondary btn-sm" aria-label="Next month" (click)="move(1)">›</button>
+  <button class="btn btn-secondary btn-sm" (click)="today()">Today</button>
+  <span class="legend muted small">
+    <span><i class="dot departure"></i>Departure</span>
+    <span><i class="dot payment"></i>Payment due</span>
+    <span><i class="dot decision"></i>Decision due</span>
+    <span><i class="dot overdue"></i>Overdue</span>
+  </span>
+</div>
+
+@if (calendar.error()) {
+  <p class="alert">The calendar could not be loaded.</p>
+} @else {
+  <div class="grid" [class.loading]="calendar.isLoading()">
+    @for (w of weekdays; track w) {
+      <span class="weekday">{{ w }}</span>
+    }
+    @for (d of days(); track d.date) {
+      <div class="cell" [class.out]="!d.inMonth" [class.today]="d.isToday">
+        <span class="num">{{ d.day }}</span>
+        @for (t of d.departures; track t.tripId) {
+          <a
+            class="event departure"
+            [class.withdrawn]="!t.isActive"
+            [routerLink]="['/agency/trips', t.tripId, 'passengers']"
+            [title]="t.name + ' · ' + t.seatsBooked + '/' + t.capacity + ' seats'"
+          >
+            ✈ {{ t.name }} <b>{{ t.seatsBooked }}/{{ t.capacity }}</b>
+          </a>
+        }
+        @for (t of d.returns; track t.tripId) {
+          <span class="event return" [title]="'Return: ' + t.name">↩ {{ t.name }}</span>
+        }
+        @for (x of d.deadlines; track x.reservationId + x.kind) {
+          <a
+            class="event"
+            [class.payment]="x.kind !== 'Decision'"
+            [class.decision]="x.kind === 'Decision'"
+            [class.overdue]="x.isOverdue"
+            [routerLink]="['/reservations', x.reservationId]"
+            [title]="label(x) + ' · ' + x.customer + ' · ' + x.tripName"
+          >
+            {{ x.kind === 'Decision' ? '⏳' : '💶' }} {{ x.code }}
+          </a>
+        }
+      </div>
+    }
+  </div>
+
+  <ol class="agenda">
+    @for (d of busyDays(); track d.date) {
+      <li>
+        <strong>{{ longDate(d.date) }}</strong>
+        @for (t of d.departures; track t.tripId) {
+          <span class="event departure"
+            >✈ {{ t.name }} · {{ t.seatsBooked }}/{{ t.capacity }} seats</span
+          >
+        }
+        @for (t of d.returns; track t.tripId) {
+          <span class="event return">↩ {{ t.name }} returns</span>
+        }
+        @for (x of d.deadlines; track x.reservationId + x.kind) {
+          <a
+            class="event"
+            [class.payment]="x.kind !== 'Decision'"
+            [class.decision]="x.kind === 'Decision'"
+            [class.overdue]="x.isOverdue"
+            [routerLink]="['/reservations', x.reservationId]"
+          >
+            {{ label(x) }} · {{ x.code }} · {{ x.customer }}
+          </a>
+        }
+      </li>
+    } @empty {
+      <li class="muted">Nothing planned this month.</li>
+    }
+  </ol>
+}

@@ -1,0 +1,379 @@
+<div class="container page">
+  <a class="back" [routerLink]="auth.isAgency() ? '/agency' : '/my-trips'">
+    ← {{ auth.isAgency() ? 'Agency panel' : 'My trips' }}
+  </a>
+
+  @if (reservation.error(); as error) {
+    <div class="state">
+      <h3>
+        {{ isNotFound(error) ? 'Reservation not found' : 'The reservation could not be loaded' }}
+      </h3>
+      <p>
+        {{ isNotFound(error) ? 'It does not exist or it is not yours to see.' : errorText(error) }}
+      </p>
+    </div>
+  } @else if (reservation.hasValue()) {
+    @let r = reservation.value();
+
+    <header class="head">
+      <div>
+        <span class="eyebrow">Reservation</span>
+        <h1>
+          <code>{{ r.code }}</code>
+        </h1>
+        <p class="muted">Booked on {{ formatDate(r.createdAt) }}</p>
+      </div>
+      <app-status-badge [status]="r.status" />
+    </header>
+
+    @if (r.status === 'Pending' && r.decideBy) {
+      <p class="notice">
+        ⏳ The agency confirms or rejects by <strong>{{ formatDateTime(r.decideBy) }}</strong
+        >. If it does not, the reservation expires, the seats are released and nothing is charged.
+      </p>
+    } @else if (r.status === 'Expired') {
+      <p class="notice">
+        This reservation expired because the agency did not confirm it in time. Nothing is charged,
+        so you can
+        <a [routerLink]="['/trips', r.tripId]">book again</a> while seats are available.
+      </p>
+    }
+
+    @if (actionError(); as e) {
+      <p class="alert">{{ e }}</p>
+    }
+
+    <div class="layout">
+      <div class="main">
+        <section class="card trip">
+          @if (r.image) {
+            <img [src]="imageUrl(r.image)" [alt]="r.destination" />
+          }
+          <div class="card-body">
+            <span class="eyebrow">{{ r.destination }} · {{ r.country }}</span>
+            <h2>
+              <a [routerLink]="['/trips', r.tripId]">{{ r.tripName }}</a>
+            </h2>
+            <dl class="facts">
+              <dt>Dates</dt>
+              <dd>{{ formatDateRange(r.startDate, r.endDate) }} · {{ r.nights }} nights</dd>
+              <dt>Hotel</dt>
+              <dd>{{ r.accommodation }}</dd>
+              <dt>Travelers</dt>
+              <dd>{{ formatTravelers(r.adults, r.children) }}</dd>
+              <dt>Organised by</dt>
+              <dd>{{ r.agency }}</dd>
+              @if (r.cancellationFee !== null) {
+                <dt>Cancellation fee</dt>
+                <dd>{{ r.cancellationFee ? formatMoney(r.cancellationFee) : 'none' }}</dd>
+              }
+            </dl>
+          </div>
+        </section>
+
+        <section class="card card-body">
+          <app-reservation-travelers
+            [reservationId]="r.id"
+            [travelers]="r.travelers"
+            [canEdit]="r.canEditTravelers"
+            (changed)="reservation.reload()"
+          />
+        </section>
+
+        <section class="card card-body">
+          <h3>Price breakdown</h3>
+          <table class="breakdown">
+            <tbody>
+              <tr>
+                <td>{{ r.adults }} × adult</td>
+                <td class="muted">{{ formatMoney(r.pricePerPerson) }}</td>
+                <td>{{ formatMoney(r.adultsTotal) }}</td>
+              </tr>
+              @if (r.children) {
+                <tr>
+                  <td>{{ r.children }} × child (−{{ r.childDiscountPercent }}%)</td>
+                  <td class="muted">{{ formatMoney(r.childPrice) }}</td>
+                  <td>{{ formatMoney(r.childrenTotal) }}</td>
+                </tr>
+              }
+              @for (room of r.rooms; track room.roomId) {
+                <tr>
+                  <td>{{ room.count }} × {{ room.roomType }} · {{ r.nights }} nights</td>
+                  <td class="muted">{{ formatMoney(room.pricePerNight) }} / night</td>
+                  <td>{{ formatMoney(room.total) }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              @if (r.discountTotal > 0) {
+                <tr class="sub">
+                  <td colspan="2">Subtotal</td>
+                  <td>{{ formatMoney(r.subtotal) }}</td>
+                </tr>
+                @if (r.offerDiscount) {
+                  <tr class="discount">
+                    <td colspan="2">{{ offerLabel(r.offer, r.offerPercent) }}</td>
+                    <td>−{{ formatMoney(r.offerDiscount) }}</td>
+                  </tr>
+                }
+                @if (r.promoDiscount) {
+                  <tr class="discount">
+                    <td colspan="2">Promo code {{ r.promoCode }} −{{ r.promoPercent }}%</td>
+                    <td>−{{ formatMoney(r.promoDiscount) }}</td>
+                  </tr>
+                }
+              }
+              @for (e of r.extras; track e.extraId) {
+                <tr>
+                  <td>{{ e.name }}</td>
+                  <td>{{ e.quantity }} × {{ formatMoney(e.unitPrice) }}</td>
+                  <td>{{ formatMoney(e.total) }}</td>
+                </tr>
+              }
+              <tr>
+                <td colspan="2">Total</td>
+                <td>{{ formatMoney(r.totalPrice) }}</td>
+              </tr>
+              @if (currency.isConverted()) {
+                <tr class="sub">
+                  <td colspan="2">Charged in euros</td>
+                  <td>{{ formatEuro(r.totalPrice) }}</td>
+                </tr>
+              }
+            </tfoot>
+          </table>
+          <p class="muted small">
+            Prices are fixed at the moment of booking; later changes to the price list do not affect
+            this reservation.
+          </p>
+        </section>
+
+        <section class="card card-body">
+          <app-reservation-payments
+            [reservationId]="r.id"
+            [summary]="r.payment"
+            [payments]="r.payments"
+            [canRecord]="r.canRecordPayment"
+            (changed)="reservation.reload()"
+          />
+        </section>
+
+        @if (r.note) {
+          <section class="card card-body">
+            <h3>Note from the customer</h3>
+            <p class="note">“{{ r.note }}”</p>
+          </section>
+        }
+
+        @if (r.review; as review) {
+          <section class="card card-body review" id="review">
+            <h3>{{ r.customer ? 'Review from the customer' : 'Your review' }}</h3>
+            @if (review.isHidden) {
+              <p class="alert">This review was hidden by a moderator and is not shown publicly.</p>
+            }
+            <div class="scores">
+              <span>Trip <app-stars [value]="review.tripRating" /></span>
+              <span>Hotel <app-stars [value]="review.hotelRating" /></span>
+              @if (review.guideRating) {
+                <span>Guide <app-stars [value]="review.guideRating" /></span>
+              }
+              @if (review.organisationRating) {
+                <span>Organisation <app-stars [value]="review.organisationRating" /></span>
+              }
+              @if (review.valueRating) {
+                <span>Value <app-stars [value]="review.valueRating" /></span>
+              }
+              <span class="muted small">{{ formatDate(review.createdAt) }}</span>
+            </div>
+            <p>{{ review.comment }}</p>
+            @if (review.agencyReply) {
+              <div class="reply">
+                <strong>Reply from {{ r.agency }}</strong>
+                <p>{{ review.agencyReply }}</p>
+              </div>
+            } @else if (r.customer && !review.isHidden) {
+              <a
+                class="btn btn-secondary btn-sm"
+                routerLink="/agency"
+                [queryParams]="{ tab: 'reviews' }"
+                >Reply in the agency panel</a
+              >
+            }
+          </section>
+        } @else if (r.canReview) {
+          <section class="card card-body review" id="review">
+            <h3>How was your trip?</h3>
+            <p class="muted small">
+              Your review helps other travelers. It is published with your first name.
+            </p>
+            <div class="rate">
+              <span>The trip <span class="muted small">(program, guide, organisation)</span></span>
+              <app-star-input
+                label="Trip rating"
+                [value]="tripRating()"
+                (valueChange)="tripRating.set($event)"
+              />
+            </div>
+            <div class="rate">
+              <span>{{ r.accommodation }}</span>
+              <app-star-input
+                label="Hotel rating"
+                [value]="hotelRating()"
+                (valueChange)="hotelRating.set($event)"
+              />
+            </div>
+            <p class="muted small optional">Optional details</p>
+            <div class="rate">
+              <span>The guide</span>
+              <app-star-input
+                label="Guide rating"
+                [value]="guideRating()"
+                (valueChange)="guideRating.set($event)"
+              />
+            </div>
+            <div class="rate">
+              <span>Organisation <span class="muted small">(transport, timing)</span></span>
+              <app-star-input
+                label="Organisation rating"
+                [value]="organisationRating()"
+                (valueChange)="organisationRating.set($event)"
+              />
+            </div>
+            <div class="rate">
+              <span>Value for money</span>
+              <app-star-input
+                label="Value rating"
+                [value]="valueRating()"
+                (valueChange)="valueRating.set($event)"
+              />
+            </div>
+            <textarea
+              class="input"
+              rows="4"
+              maxlength="1000"
+              placeholder="What did you like? What could be better?"
+              [value]="comment()"
+              (input)="comment.set($any($event.target).value)"
+            ></textarea>
+            <span class="muted small"
+              >{{ comment().trim().length }}/1000 · at least 20 characters</span
+            >
+            @if (reviewError(); as e) {
+              <p class="alert">{{ e }}</p>
+            }
+            <button class="btn btn-primary" [disabled]="busy()" (click)="submitReview(r)">
+              Publish review
+            </button>
+          </section>
+        }
+      </div>
+
+      <aside class="side">
+        @if (r.canDecide) {
+          <section class="card card-body actions">
+            <h3>Decision</h3>
+            @if (!rejecting()) {
+              <button class="btn btn-primary" [disabled]="busy()" (click)="confirmReservation(r)">
+                Confirm reservation
+              </button>
+              <button class="btn btn-secondary" [disabled]="busy()" (click)="rejecting.set(true)">
+                Reject…
+              </button>
+            } @else {
+              <label class="field">
+                <span>Reason (shown to the customer)</span>
+                <textarea
+                  class="input"
+                  rows="3"
+                  maxlength="500"
+                  [value]="reason()"
+                  (input)="reason.set($any($event.target).value)"
+                ></textarea>
+              </label>
+              <button class="btn btn-primary" [disabled]="busy()" (click)="reject(r)">
+                Reject reservation
+              </button>
+              <button class="btn btn-secondary" (click)="rejecting.set(false)">Back</button>
+            }
+          </section>
+        }
+
+        @if (r.canCancel) {
+          <section class="card card-body actions">
+            <h3>Change of plans?</h3>
+            @if (r.cancellationFeeToday > 0) {
+              <p class="small">
+                Cancelling today costs
+                <strong>{{ formatMoney(r.cancellationFeeToday) }}</strong> ({{
+                  r.cancellationFeePercentToday
+                }}% of the price).
+              </p>
+            } @else {
+              <p class="small">You can cancel today <strong>free of charge</strong>.</p>
+            }
+            @if (r.status === 'Confirmed') {
+              <app-cancellation-policy [tiers]="r.cancellationPolicy" />
+            } @else {
+              <p class="muted small">Until the agency confirms, cancelling is always free.</p>
+            }
+            <button class="btn btn-secondary" [disabled]="busy()" (click)="cancel(r)">
+              Cancel reservation
+            </button>
+          </section>
+        }
+
+        <section class="card card-body">
+          <app-reservation-messages
+            [reservationId]="r.id"
+            [agency]="r.agency"
+            [forAgency]="!!r.customer"
+          />
+        </section>
+
+        <section class="card card-body">
+          <h3>History</h3>
+          <ol class="timeline">
+            @for (h of r.history; track $index) {
+              <li [class]="'s-' + h.status.toLowerCase()">
+                <strong>{{ historyLabel(h.status, h.role) }}</strong>
+                <span class="muted small">
+                  {{ formatDateTime(h.changedAt) }} ·
+                  {{ h.role === 'System' ? 'automatically' : h.changedBy }}
+                  @if (h.role === 'Agency') {
+                    ({{ r.agency }})
+                  }
+                </span>
+                @if (h.comment) {
+                  <p class="comment">“{{ h.comment }}”</p>
+                }
+              </li>
+            }
+          </ol>
+        </section>
+
+        <section class="card card-body">
+          @if (r.customer; as c) {
+            <h3>Customer</h3>
+            <p>
+              <strong>{{ c.name }}</strong
+              ><br />
+              <a [href]="'mailto:' + c.email">{{ c.email }}</a
+              ><br />
+              {{ c.phone }}
+            </p>
+          } @else {
+            <h3>Your agency</h3>
+            <p>
+              <strong>{{ r.agency }}</strong
+              ><br />
+              {{ r.agencyAddress }}<br />
+              {{ r.agencyPhone }}
+            </p>
+          }
+        </section>
+      </aside>
+    </div>
+  } @else {
+    <div class="skeleton" style="height: 420px"></div>
+  }
+</div>

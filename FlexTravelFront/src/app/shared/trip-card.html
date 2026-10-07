@@ -1,0 +1,42 @@
+@let t = trip();
+<app-compare-button class="compare" [tripId]="t.id" />
+<a class="card trip" [routerLink]="['/trips', t.id]">
+  <div class="image">
+    @if (t.image) {
+      <img [src]="imageUrl(t.image)" [alt]="t.destination" loading="lazy" />
+    }
+    <span class="badge agency">{{ t.agency }}</span>
+    @if (t.offer) {
+      <span class="badge offer">{{ offerLabel(t.offer, t.offerPercent) }}</span>
+    }
+    @if (t.seatsLeft === 0) {
+      <span class="badge badge-danger seats">Sold out</span>
+    } @else if (t.seatsLeft <= 10) {
+      <span class="badge badge-danger seats">Only {{ t.seatsLeft }} seats left</span>
+    }
+  </div>
+  <div class="card-body">
+    <span class="eyebrow">{{ t.destination }} · {{ t.country }}</span>
+    <h3>{{ t.name }}</h3>
+    <p class="muted when">
+      {{ transportIcon(t.transport) }} {{ formatDateRange(t.startDate, t.endDate) }} ·
+      {{ t.nights }} nights
+      @if (t.otherDepartures) {
+        <span class="more-dates"
+          >· +{{ t.otherDepartures }} more {{ t.otherDepartures === 1 ? 'date' : 'dates' }}</span
+        >
+      }
+    </p>
+    <div class="bottom">
+      <div class="price">
+        <span class="muted">from</span>
+        @if (t.offer) {
+          <s class="muted">{{ formatMoney(t.priceFromBeforeDiscount) }}</s>
+        }
+        <strong>{{ formatMoney(t.priceFrom) }}</strong>
+        <span class="muted">/ person</span>
+      </div>
+      <app-rating [average]="t.rating" [count]="t.reviewCount" [compact]="true" />
+    </div>
+  </div>
+</a>

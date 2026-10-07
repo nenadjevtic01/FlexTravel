@@ -1,0 +1,148 @@
+@if (reviews.hasValue()) {
+  @let page = reviews.value();
+  @if (page.totalCount === 0) {
+    <p class="muted empty">{{ emptyText() }}</p>
+  } @else {
+    @if (mode() === 'public') {
+      <div class="summary">
+        <div>
+          <span class="big">{{ page.averageTripRating?.toFixed(1) }}</span>
+          <span class="muted">trip</span>
+        </div>
+        <div>
+          <span class="big">{{ page.averageHotelRating?.toFixed(1) }}</span>
+          <span class="muted">hotels</span>
+        </div>
+        <span class="muted"
+          >{{ page.totalCount }} {{ page.totalCount === 1 ? 'review' : 'reviews' }} from
+          travelers</span
+        >
+      </div>
+    }
+
+    <ul class="reviews" [class.reloading]="reviews.isLoading()">
+      @for (r of page.items; track r.id) {
+        <li class="review" [class.hidden]="r.isHidden">
+          <div class="head">
+            <app-avatar [src]="r.authorAvatar" [name]="r.author" [size]="36" />
+            <div class="who">
+              <strong>{{ r.author }}</strong>
+              <span class="muted small">
+                {{ formatTravelers(r.adults, r.children) }} · travelled
+                {{ formatDate(r.tripStartDate) }}
+              </span>
+            </div>
+            @if (r.isHidden) {
+              <span class="badge badge-danger">Hidden</span>
+            }
+          </div>
+
+          @if (showTrip()) {
+            <p class="trip small">
+              <a [routerLink]="['/trips', r.tripId]">{{ r.tripName }}</a> · {{ r.agency }} ·
+              {{ r.hotel }}
+            </p>
+          }
+
+          <div class="scores">
+            <span>Trip <app-stars [value]="r.tripRating" /></span>
+            <span>Hotel <app-stars [value]="r.hotelRating" /></span>
+            @if (r.guideRating) {
+              <span class="detail">Guide {{ r.guideRating }}★</span>
+            }
+            @if (r.organisationRating) {
+              <span class="detail">Organisation {{ r.organisationRating }}★</span>
+            }
+            @if (r.valueRating) {
+              <span class="detail">Value {{ r.valueRating }}★</span>
+            }
+          </div>
+          <p class="comment">{{ r.comment }}</p>
+
+          @if (r.agencyReply) {
+            <div class="reply">
+              <strong>Reply from {{ r.agency }}</strong>
+              @if (r.agencyReplyBy && mode() !== 'public') {
+                <span class="muted small"> · {{ r.agencyReplyBy }}</span>
+              }
+              <p>{{ r.agencyReply }}</p>
+            </div>
+          }
+
+          @if (r.isHidden && r.moderationNote) {
+            <p class="moderation small">
+              Hidden by {{ r.moderatedBy ?? 'a moderator' }}: {{ r.moderationNote }}
+            </p>
+          }
+
+          @if (mode() === 'agency' && !r.agencyReply && !r.isHidden) {
+            @if (replyFor() === r.id) {
+              <div class="form">
+                <textarea
+                  class="input"
+                  rows="3"
+                  maxlength="1000"
+                  placeholder="Thank the traveler or explain what you have changed."
+                  [value]="text()"
+                  (input)="text.set($any($event.target).value)"
+                ></textarea>
+                <div class="actions">
+                  <button class="btn btn-primary btn-sm" [disabled]="busy()" (click)="reply(r)">
+                    Publish reply
+                  </button>
+                  <button class="btn btn-secondary btn-sm" (click)="replyFor.set(null)">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <button class="btn btn-secondary btn-sm" (click)="startReply(r)">Reply</button>
+            }
+          }
+
+          @if (mode() === 'admin') {
+            @if (r.isHidden) {
+              <button class="btn btn-secondary btn-sm" [disabled]="busy()" (click)="show(r)">
+                Show again
+              </button>
+            } @else if (hideFor() === r.id) {
+              <div class="form">
+                <input
+                  class="input"
+                  maxlength="300"
+                  placeholder="Reason (the customer will see it)"
+                  [value]="text()"
+                  (input)="text.set($any($event.target).value)"
+                />
+                <div class="actions">
+                  <button class="btn btn-primary btn-sm" [disabled]="busy()" (click)="hide(r)">
+                    Hide review
+                  </button>
+                  <button class="btn btn-secondary btn-sm" (click)="hideFor.set(null)">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <button class="btn btn-secondary btn-sm" (click)="startHide(r)">Hide</button>
+            }
+          }
+
+          @if (error() && (replyFor() === r.id || hideFor() === r.id)) {
+            <p class="alert">{{ error() }}</p>
+          }
+        </li>
+      }
+    </ul>
+
+    <app-pagination
+      [page]="page.currentPage"
+      [pagesCount]="page.pagesCount"
+      (pageChange)="pageNumber.set($event)"
+    />
+  }
+} @else if (reviews.error()) {
+  <p class="alert">Reviews could not be loaded.</p>
+} @else {
+  <div class="skeleton" style="height: 120px"></div>
+}

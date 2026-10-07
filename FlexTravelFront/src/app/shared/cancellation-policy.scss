@@ -1,0 +1,21 @@
+.policy {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.88rem;
+}
+li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 8px;
+  border-radius: 6px;
+}
+.current {
+  background: var(--color-primary-soft);
+  font-weight: 600;
+}
+.past {
+  color: var(--color-muted);
+  text-decoration: line-through;
+}

@@ -1,0 +1,29 @@
+<div class="chart" role="img" [attr.aria-label]="summary()">
+  <div class="plot">
+    @for (p of points(); track p.month; let i = $index) {
+      <div
+        class="column"
+        tabindex="0"
+        (mouseenter)="active.set(i)"
+        (mouseleave)="active.set(null)"
+        (focus)="active.set(i)"
+        (blur)="active.set(null)"
+      >
+        <span class="value">{{ p.reservations || '' }}</span>
+        <span class="bar" [style.height.%]="p.height"></span>
+        @if (active() === i) {
+          <span class="tooltip">
+            <strong>{{ p.long }}</strong>
+            {{ p.reservations }} {{ p.reservations === 1 ? 'reservation' : 'reservations' }}<br />
+            {{ p.money }}
+          </span>
+        }
+      </div>
+    }
+  </div>
+  <div class="axis">
+    @for (p of points(); track p.month) {
+      <span>{{ p.short }}</span>
+    }
+  </div>
+</div>

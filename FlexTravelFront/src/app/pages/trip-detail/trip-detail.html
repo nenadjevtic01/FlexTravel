@@ -1,0 +1,602 @@
+<div class="container page">
+  @if (trip.error(); as error) {
+    <div class="state">
+      <h3>
+        {{
+          isNotFound(error) ? 'This trip is no longer available' : 'The trip could not be loaded'
+        }}
+      </h3>
+      <p>
+        {{ isNotFound(error) ? 'It may have been withdrawn by the agency.' : errorText(error) }}
+      </p>
+      <a class="btn btn-secondary" routerLink="/trips">Browse trips</a>
+    </div>
+  } @else if (trip.hasValue()) {
+    @let t = trip.value();
+
+    <nav class="breadcrumbs">
+      <a routerLink="/trips">Trips</a>
+      <span>/</span>
+      <a [routerLink]="['/destinations', t.destination.id]">{{ t.destination.name }}</a>
+      <span>/</span>
+      <span>{{ t.name }}</span>
+    </nav>
+
+    <header class="title">
+      <span class="eyebrow">{{ t.destination.name }} · {{ t.destination.country }}</span>
+      <h1>{{ t.name }}</h1>
+      <div class="facts-row">
+        <span>📅 {{ formatDateRange(t.startDate, t.endDate) }}</span>
+        <span>🌙 {{ t.nights }} nights</span>
+        <span>{{ transportIcon(t.transport) }} {{ t.transport }}</span>
+        <span
+          >🏢 <a [routerLink]="['/agencies', t.agency.id]">{{ t.agency.name }}</a></span
+        >
+        <span [class.low]="t.seatsLeft <= 10"
+          >👥 {{ t.seatsLeft }} of {{ t.capacity }} seats left</span
+        >
+        @if (t.rating) {
+          <app-rating [average]="t.rating.average" [count]="t.rating.count" />
+        }
+        <app-compare-button [tripId]="t.id" />
+      </div>
+
+      @if (t.offer) {
+        <p class="offer-banner">
+          🏷️ <strong>{{ offerLabel(t.offer, t.offerPercent) }}</strong>
+          @if (t.offer === 'EarlyBooking' && t.earlyBookingUntil) {
+            for reservations made by {{ formatDate(t.earlyBookingUntil) }}.
+          } @else {
+            for reservations made in the last {{ t.lastMinuteDays }} days before departure.
+          }
+          The discount is already included in the price below.
+        </p>
+      } @else if (t.earlyBookingPercent || t.lastMinutePercent) {
+        <p class="offer-note muted">
+          @if (t.lastMinutePercent) {
+            Last minute −{{ t.lastMinutePercent }}% for reservations made
+            {{ t.lastMinuteDays }} days or less before departure.
+          } @else {
+            The early booking offer has ended.
+          }
+        </p>
+      }
+    </header>
+
+    @if (t.destination.images.length) {
+      <section class="gallery">
+        @for (image of t.destination.images.slice(0, 3); track image.src; let i = $index) {
+          <img [class.main]="i === 0" [src]="imageUrl(image.src)" [alt]="image.alt" />
+        }
+      </section>
+    }
+
+    <div class="layout">
+      <div class="content">
+        <section class="card card-body">
+          <h2>About this trip</h2>
+          <p class="lead">{{ t.description }}</p>
+          <p class="muted small">
+            Organised by
+            <a [routerLink]="['/agencies', t.agency.id]"
+              ><strong>{{ t.agency.name }}</strong></a
+            >, {{ t.agency.address }} · {{ t.agency.phone }}
+          </p>
+        </section>
+
+        <section class="card card-body">
+          <h2>Program day by day</h2>
+          <ol class="timeline">
+            @for (day of t.itinerary; track day.day) {
+              <li>
+                <span class="day">Day {{ day.day }}</span>
+                @if (day.title) {
+                  <strong class="day-title">{{ day.title }}</strong>
+                }
+                <p>{{ day.activity }}</p>
+                @if (mealsText(day) || day.overnight) {
+                  <p class="day-info">
+                    @if (mealsText(day); as meals) {
+                      <span>🍽️ {{ meals }}</span>
+                    }
+                    @if (day.overnight) {
+                      <span>🛏️ Overnight in {{ day.overnight }}</span>
+                    }
+                  </p>
+                }
+              </li>
+            }
+          </ol>
+        </section>
+
+        <app-weather-card
+          [destinationId]="t.destination.id"
+          [from]="t.startDate"
+          [to]="t.endDate"
+        />
+
+        @if (t.extras.length) {
+          <section class="card card-body">
+            <h2>Extras you can add</h2>
+            <p class="muted small">Booked with the trip; discounts do not apply to extras.</p>
+            <ul class="extras">
+              @for (e of t.extras; track e.id) {
+                <li>
+                  <span class="extra-icon" aria-hidden="true">{{ extraIcon(e.kind) }}</span>
+                  <div>
+                    <strong>{{ e.name }}</strong>
+                    @if (e.description) {
+                      <p class="muted small">{{ e.description }}</p>
+                    }
+                  </div>
+                  <span class="extra-price">
+                    {{ formatMoney(e.price) }}
+                    <small class="muted">{{ e.perPerson ? '/ person' : '/ booking' }}</small>
+                  </span>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        @if (t.attractions.length) {
+          <section class="card card-body">
+            <h2>Sights on the program</h2>
+            <ul class="sights">
+              @for (a of t.attractions; track a.id) {
+                <li>
+                  <span class="sight-icon" aria-hidden="true">{{
+                    attractionIcon(a.category)
+                  }}</span>
+                  <div>
+                    <strong>{{ a.name }}</strong>
+                    <span class="muted small"> · {{ a.category }}</span>
+                    <p>{{ a.description }}</p>
+                  </div>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        <section>
+          <h2>Hotels on this trip</h2>
+          <div class="hotels">
+            @for (h of t.accommodations; track h.id) {
+              <button
+                class="card hotel"
+                [class.selected]="h.id === hotelId()"
+                (click)="hotelId.set(h.id); step.set('configure')"
+              >
+                <span class="badge">{{ h.type }}</span>
+                <strong>{{ h.name }}</strong>
+                <app-stars [value]="h.stars" />
+                @if (h.rating?.count) {
+                  <app-rating [average]="h.rating!.average" [count]="h.rating!.count" />
+                }
+                <span class="muted small"
+                  >from {{ formatMoney(cheapestRoom(h)) }} / room / night</span
+                >
+              </button>
+            }
+          </div>
+        </section>
+
+        <section class="card card-body">
+          <h2>Cancellation</h2>
+          <p class="muted small">
+            Free until {{ formatDate(t.freeCancellationUntil) }} ({{ t.freeCancellationDays }} days
+            before departure); later the fee is a share of the price. Unconfirmed reservations can
+            always be cancelled for free.
+          </p>
+          <app-cancellation-policy [tiers]="t.cancellationPolicy" />
+        </section>
+
+        <section class="card card-body">
+          <h2>Traveler reviews</h2>
+          <p class="muted small">
+            From travelers on earlier departures of this trip with {{ t.agency.name }}.
+          </p>
+          <app-rating-breakdown [rating]="t.ratingDetails" />
+          <app-review-list
+            [filter]="{ tripId: t.id }"
+            emptyText="No reviews yet. This is the first departure of this trip."
+          />
+        </section>
+      </div>
+
+      <aside class="card booking">
+        <div class="booking-head">
+          <span class="muted">Trip price</span>
+          <strong>{{ formatMoney(t.pricePerPerson) }}</strong>
+          <span class="muted">/ person + hotel</span>
+        </div>
+
+        @if (step() === 'configure') {
+          <div class="row">
+            <div>
+              <strong>Adults</strong>
+              <span class="muted small">12+ years</span>
+            </div>
+            <app-stepper
+              [value]="adults()"
+              [min]="1"
+              [max]="10"
+              label="adults"
+              (valueChange)="adults.set($event)"
+            />
+          </div>
+          <div class="row">
+            <div>
+              <strong>Children</strong>
+              <span class="muted small">−{{ t.childDiscountPercent }}% on the trip price</span>
+            </div>
+            <app-stepper
+              [value]="children()"
+              [max]="9"
+              label="children"
+              (valueChange)="children.set($event)"
+            />
+          </div>
+
+          <div class="field">
+            <label for="hotel">Hotel</label>
+            <select id="hotel" class="select" (change)="selectHotel($any($event.target).value)">
+              @for (h of t.accommodations; track h.id) {
+                <option [value]="h.id" [selected]="h.id === hotelId()">
+                  {{ h.name }} ({{ h.stars }}★)
+                </option>
+              }
+            </select>
+          </div>
+
+          @if (hotel(); as h) {
+            <div class="rooms">
+              <span class="label">Rooms</span>
+              @for (room of h.rooms; track room.id) {
+                <div class="row room" [class.unavailable]="room.available === 0">
+                  <div>
+                    <strong>{{ room.roomType }}</strong>
+                    <span class="muted small">
+                      sleeps {{ room.capacity }} · {{ formatMoney(room.pricePerNight) }}/night ·
+                      {{ room.available === 0 ? 'fully booked' : room.available + ' left' }}
+                    </span>
+                  </div>
+                  <app-stepper
+                    [value]="rooms()[room.id] ?? 0"
+                    [max]="room.available < 5 ? room.available : 5"
+                    [label]="room.roomType"
+                    (valueChange)="setRoom(room.id, $event)"
+                  />
+                </div>
+              }
+            </div>
+          }
+
+          @if (t.extras.length) {
+            <div class="rooms">
+              <span class="label">Extras</span>
+              @for (e of t.extras; track e.id) {
+                <div class="row extra-row">
+                  <label class="extra-check">
+                    <input
+                      type="checkbox"
+                      [checked]="extraCount(e) > 0"
+                      (change)="toggleExtra(e, $any($event.target).checked)"
+                    />
+                    <span>
+                      <strong>{{ e.name }}</strong>
+                      <span class="muted small">
+                        {{ formatMoney(e.price) }} {{ e.perPerson ? '/ person' : '/ booking' }}
+                      </span>
+                    </span>
+                  </label>
+                  @if (e.perPerson && extraCount(e) > 0) {
+                    <app-stepper
+                      [value]="extraCount(e)"
+                      [min]="1"
+                      [max]="travelerCount()"
+                      [label]="e.name"
+                      (valueChange)="setExtra(e, $event)"
+                    />
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          @if (lastQuote(); as q) {
+            <div class="quote" [class.loading]="quote.isLoading()">
+              <div class="line">
+                <span>{{ q.adults }} × adult</span
+                ><span>{{ formatMoney(q.adults * q.pricePerPerson) }}</span>
+              </div>
+              @if (q.children) {
+                <div class="line">
+                  <span>{{ q.children }} × child</span
+                  ><span>{{ formatMoney(q.children * q.childPrice) }}</span>
+                </div>
+              }
+              @for (r of q.rooms; track r.roomId) {
+                <div class="line">
+                  <span>{{ r.count }} × {{ r.roomType }} × {{ q.nights }} nights</span>
+                  <span>{{ formatMoney(r.total) }}</span>
+                </div>
+              }
+              @if (q.offerDiscount || q.promoDiscount) {
+                <div class="line subtotal">
+                  <span>Subtotal</span><span>{{ formatMoney(q.subtotal) }}</span>
+                </div>
+              }
+              @if (q.offerDiscount) {
+                <div class="line discount">
+                  <span>{{ offerLabel(q.offer, q.offerPercent) }}</span
+                  ><span>−{{ formatMoney(q.offerDiscount) }}</span>
+                </div>
+              }
+              @if (q.promoDiscount) {
+                <div class="line discount">
+                  <span>Code {{ q.promoCode }} −{{ q.promoPercent }}%</span
+                  ><span>−{{ formatMoney(q.promoDiscount) }}</span>
+                </div>
+              }
+              @for (e of q.extras; track e.extraId) {
+                <div class="line">
+                  <span>{{ e.quantity > 1 ? e.quantity + ' × ' : '' }}{{ e.name }}</span>
+                  <span>{{ formatMoney(e.total) }}</span>
+                </div>
+              }
+              <div class="line total">
+                <span>Total</span><span>{{ formatMoney(q.total) }}</span>
+              </div>
+              @if (currency.isConverted()) {
+                <p class="muted small charged">Charged in euros: {{ formatEuro(q.total) }}</p>
+              }
+              @for (problem of q.problems; track problem) {
+                <p class="problem">⚠️ {{ problem }}</p>
+              }
+            </div>
+
+            @if (auth.canBook()) {
+              <div class="promo">
+                <label class="sr-only" for="promo">Promo code</label>
+                <input
+                  id="promo"
+                  class="input"
+                  placeholder="Promo code"
+                  autocomplete="off"
+                  maxlength="20"
+                  [value]="promoInput()"
+                  (input)="promoInput.set($any($event.target).value)"
+                  (keydown.enter)="applyPromo()"
+                />
+                @if (promoCode() && promoCode() === promoInput().trim()) {
+                  <button class="btn btn-secondary btn-sm" (click)="removePromo()">Remove</button>
+                } @else {
+                  <button
+                    class="btn btn-secondary btn-sm"
+                    [disabled]="!promoInput().trim()"
+                    (click)="applyPromo()"
+                  >
+                    Apply
+                  </button>
+                }
+              </div>
+              @if (q.promoCodeError) {
+                <p class="problem">⚠️ {{ q.promoCodeError }}</p>
+              } @else if (q.promoCode) {
+                <p class="promo-ok">✓ Code {{ q.promoCode }} applied</p>
+              }
+            }
+
+            @if (auth.canUseWaitlist()) {
+              @if (myWaitlistEntry(); as entry) {
+                <div class="waitlist">
+                  @if (entry.canBookNow) {
+                    <strong>🎟️ Seats are free again!</strong>
+                    <span class="muted small">Book now: seats are not held for the waitlist.</span>
+                  } @else {
+                    <strong>You are on the waitlist</strong>
+                    <span class="muted small"
+                      >Position {{ entry.position }} for
+                      {{ formatTravelers(entry.adults, entry.children) }}. We will notify you when
+                      seats are released.</span
+                    >
+                  }
+                  <button class="link" [disabled]="waitlistBusy()" (click)="leaveWaitlist(entry)">
+                    Leave the waitlist
+                  </button>
+                </div>
+              } @else if (notEnoughSeats(q) && t.seatsLeft < t.capacity) {
+                <div class="waitlist">
+                  <strong>Not enough seats for your group</strong>
+                  <span class="muted small"
+                    >Join the waitlist and we will notify you as soon as seats are released.</span
+                  >
+                  <button
+                    class="btn btn-secondary wide"
+                    [disabled]="waitlistBusy()"
+                    (click)="joinWaitlist()"
+                  >
+                    Join the waitlist
+                  </button>
+                </div>
+              }
+              @if (waitlistError(); as error) {
+                <p class="alert">{{ error }}</p>
+              }
+            }
+
+            @if (!auth.isLoggedIn()) {
+              <a
+                class="btn btn-primary wide"
+                routerLink="/login"
+                [queryParams]="{ returnUrl: '/trips/' + t.id }"
+              >
+                Sign in to book
+              </a>
+              <p class="muted small center">
+                No account?
+                <a routerLink="/register" [queryParams]="{ returnUrl: '/trips/' + t.id }"
+                  >Register</a
+                >
+              </p>
+            } @else if (!auth.canBook()) {
+              <p class="muted small center">Bookings are made from customer accounts.</p>
+            } @else {
+              <button
+                class="btn btn-primary wide"
+                [disabled]="!q.isValid || !!q.promoCodeError || quote.isLoading()"
+                (click)="continueToReview()"
+              >
+                Book now
+              </button>
+            }
+          }
+        } @else {
+          @if (lastQuote(); as q) {
+            <h3>Review your booking</h3>
+            <dl class="facts">
+              <dt>Trip</dt>
+              <dd>{{ t.name }}</dd>
+              <dt>Dates</dt>
+              <dd>{{ formatDateRange(t.startDate, t.endDate) }}</dd>
+              <dt>Hotel</dt>
+              <dd>{{ hotel()?.name }}</dd>
+              <dt>Travelers</dt>
+              <dd>{{ formatTravelers(q.adults, q.children) }}</dd>
+              @for (r of q.rooms; track r.roomId) {
+                <dt>Room</dt>
+                <dd>{{ r.count }} × {{ r.roomType }}</dd>
+              }
+              @if (q.offerDiscount + q.promoDiscount > 0) {
+                <dt>Discounts</dt>
+                <dd class="discount">−{{ formatMoney(q.offerDiscount + q.promoDiscount) }}</dd>
+              }
+              @for (e of q.extras; track e.extraId) {
+                <dt>Extra</dt>
+                <dd>{{ e.quantity }} × {{ e.name }} ({{ formatMoney(e.total) }})</dd>
+              }
+              <dt>Total</dt>
+              <dd class="total-value">
+                {{ formatMoney(q.total) }}
+                @if (currency.isConverted()) {
+                  <small class="muted">= {{ formatEuro(q.total) }}</small>
+                }
+              </dd>
+            </dl>
+
+            <div class="travelers">
+              <span class="label">Travelers</span>
+              <p class="muted small">
+                As in the passport. Children are travelers under 12 on the day of departure.
+              </p>
+              @for (traveler of travelers(); track $index; let i = $index) {
+                <fieldset class="traveler">
+                  <legend>{{ isChildRow(i) ? 'Child' : 'Adult' }} {{ i + 1 }}</legend>
+                  <input
+                    class="input"
+                    placeholder="First name"
+                    maxlength="50"
+                    autocomplete="off"
+                    [attr.aria-label]="'First name of traveler ' + (i + 1)"
+                    [value]="traveler.firstName"
+                    (input)="setTraveler(i, { firstName: $any($event.target).value })"
+                  />
+                  <input
+                    class="input"
+                    placeholder="Last name"
+                    maxlength="50"
+                    autocomplete="off"
+                    [attr.aria-label]="'Last name of traveler ' + (i + 1)"
+                    [value]="traveler.lastName"
+                    (input)="setTraveler(i, { lastName: $any($event.target).value })"
+                  />
+                  <input
+                    class="input"
+                    type="date"
+                    [attr.aria-label]="'Date of birth of traveler ' + (i + 1)"
+                    [value]="traveler.dateOfBirth"
+                    (change)="setTraveler(i, { dateOfBirth: $any($event.target).value })"
+                  />
+                </fieldset>
+              }
+            </div>
+
+            <div class="field">
+              <label for="note">Note for the agency (optional)</label>
+              <textarea
+                id="note"
+                class="input"
+                rows="3"
+                maxlength="500"
+                placeholder="e.g. late arrival, dietary needs"
+                [value]="note()"
+                (input)="note.set($any($event.target).value)"
+              ></textarea>
+            </div>
+
+            <p class="muted small">
+              The agency confirms your reservation within 3 days (otherwise it expires and nothing
+              is charged). Then a 30% deposit is due within a week and the rest three weeks before
+              departure. Until the agency confirms, you can cancel for free.
+            </p>
+            <div class="policy-box">
+              <span class="label">If you cancel after the confirmation</span>
+              <app-cancellation-policy [tiers]="t.cancellationPolicy" />
+            </div>
+
+            @if (submitError(); as error) {
+              <p class="alert">{{ error }}</p>
+            }
+
+            <button
+              class="btn btn-primary wide"
+              [disabled]="submitting() || !q.isValid"
+              (click)="confirm()"
+            >
+              {{ submitting() ? 'Booking…' : 'Confirm reservation' }}
+            </button>
+            <button class="btn btn-secondary wide" (click)="step.set('configure')">Back</button>
+          }
+        }
+      </aside>
+    </div>
+
+    @if (similar.hasValue()) {
+      @let s = similar.value();
+      @if (s.otherDepartures.length) {
+        <section class="more">
+          <h2>Other dates of this trip</h2>
+          <div class="dates">
+            @for (d of s.otherDepartures; track d.id) {
+              <a class="card date" [routerLink]="['/trips', d.id]">
+                <strong>{{ formatDateRange(d.startDate, d.endDate) }}</strong>
+                <span class="muted small">
+                  from {{ formatMoney(d.priceFrom) }} ·
+                  {{ d.seatsLeft === 0 ? 'sold out' : d.seatsLeft + ' seats left' }}
+                </span>
+                @if (d.offer) {
+                  <span class="badge offer">{{ offerLabel(d.offer, d.offerPercent) }}</span>
+                }
+              </a>
+            }
+          </div>
+        </section>
+      }
+      @if (s.similar.length) {
+        <section class="more">
+          <h2>You might also like</h2>
+          <div class="similar">
+            @for (trip of s.similar; track trip.id) {
+              <app-trip-card [trip]="trip" />
+            }
+          </div>
+        </section>
+      }
+    }
+  } @else {
+    <div class="skeleton" style="height: 48px; width: 50%; margin-bottom: 24px"></div>
+    <div class="skeleton" style="height: 380px"></div>
+  }
+</div>

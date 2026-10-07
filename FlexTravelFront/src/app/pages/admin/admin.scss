@@ -1,0 +1,277 @@
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 4px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--color-border);
+
+  button {
+    padding: 10px 16px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: none;
+    font: inherit;
+    font-weight: 600;
+    color: var(--color-muted);
+    cursor: pointer;
+
+    &.active {
+      border-color: var(--color-accent);
+      color: var(--color-text);
+    }
+  }
+}
+
+.alert {
+  margin-bottom: 16px;
+}
+
+.small {
+  font-size: 0.82rem;
+}
+
+.block {
+  display: block;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+
+  .label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-muted);
+  }
+
+  strong {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    color: var(--color-primary);
+  }
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+h3 {
+  font-size: 1.15rem;
+}
+
+.ranking {
+  margin: 0;
+  padding-left: 20px;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+
+  th,
+  td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+  }
+
+  th {
+    background: var(--color-bg);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-muted);
+  }
+
+  tr.selected td {
+    background: var(--color-primary-soft);
+  }
+
+  tr.inactive td {
+    color: var(--color-muted);
+  }
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.revenue {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bar {
+  display: block;
+  width: 120px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--color-border);
+  overflow: hidden;
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+    background: var(--color-primary);
+  }
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+
+  .search {
+    width: 260px;
+  }
+}
+
+app-user-editor {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.new-agency {
+  margin-bottom: 16px;
+
+  .row {
+    display: grid;
+    grid-template-columns: 1.2fr 1.4fr 1fr auto;
+    gap: 10px;
+  }
+}
+
+.errors {
+  padding-left: 32px;
+}
+
+.agency {
+  margin-bottom: 16px;
+  padding: 18px 20px;
+
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  h3 {
+    margin: 0 0 2px;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  .add {
+    margin-top: 12px;
+  }
+}
+
+.numbers {
+  display: flex;
+  gap: 24px;
+  margin: 0;
+
+  dt {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 700;
+  }
+}
+
+.employee-form {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .tiles,
+  .grid-2,
+  .new-agency .row,
+  .employee-form {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .tiles,
+  .grid-2,
+  .new-agency .row,
+  .employee-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+.agency,
+.card-body:has(> .table) {
+  overflow-x: auto;
+}
+
+.review-filter {
+  margin-bottom: 8px;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.employee-editor {
+  margin: 12px 0;
+}

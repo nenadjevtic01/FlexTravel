@@ -1,0 +1,99 @@
+.editor {
+  padding: 20px 22px;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.who {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.details {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: 10px 12px;
+  margin: 8px 0 12px;
+}
+.details label span {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+.details-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  grid-column: 1 / -1;
+}
+.saved {
+  font-size: 0.85rem;
+  color: var(--color-success);
+}
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+ul.alert {
+  padding-left: 32px;
+}
+h3 {
+  margin: 0 0 4px;
+}
+h4 {
+  margin: 16px 0 4px;
+}
+p {
+  margin: 0 0 6px;
+}
+.small {
+  font-size: 0.82rem;
+}
+.block {
+  display: block;
+}
+.close {
+  align-self: flex-start;
+  border: 0;
+  background: none;
+  font-size: 1.5rem;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+.use-cases {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 6px 16px;
+  margin: 12px 0 16px;
+}
+.use-case {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+.use-case.default {
+  background: var(--color-primary-soft);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.danger {
+  color: var(--color-danger);
+}
+.alert {
+  margin-bottom: 12px;
+}

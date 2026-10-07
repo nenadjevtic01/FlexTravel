@@ -1,0 +1,12 @@
+@if (shown(); as n) {
+  <div class="toast card" role="status" aria-live="polite">
+    <button type="button" class="body" (click)="open(n)">
+      <span class="icon" aria-hidden="true">{{ icon(n) }}</span>
+      <span class="text">
+        <strong>{{ n.title }}</strong>
+        <span>{{ n.message }}</span>
+      </span>
+    </button>
+    <button type="button" class="close" aria-label="Close" (click)="shown.set(null)">×</button>
+  </div>
+}

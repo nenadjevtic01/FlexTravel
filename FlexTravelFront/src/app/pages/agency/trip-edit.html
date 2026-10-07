@@ -1,0 +1,15 @@
+<div class="container page">
+  <a class="back" routerLink="/agency" [queryParams]="{ tab: 'trips' }">← Trips</a>
+  <header class="page-header">
+    <span class="eyebrow">Agency panel</span>
+    <h1>{{ tripId() ? 'Edit trip' : 'New trip' }}</h1>
+    <p class="muted">
+      {{
+        tripId()
+          ? 'Changes are visible to customers immediately.'
+          : 'The trip is published right away and customers can book it.'
+      }}
+    </p>
+  </header>
+  <app-trip-form [tripId]="tripId()" (saved)="onSaved($event)" />
+</div>

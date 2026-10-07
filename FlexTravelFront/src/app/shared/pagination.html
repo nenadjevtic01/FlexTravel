@@ -1,0 +1,21 @@
+@if (pagesCount() > 1) {
+  <nav class="pagination" aria-label="Pages">
+    <button class="btn btn-secondary btn-sm" [disabled]="page() <= 1" (click)="go(page() - 1)">
+      ‹ Previous
+    </button>
+    @for (p of pages(); track $index) {
+      @if (p === null) {
+        <span class="gap">…</span>
+      } @else {
+        <button class="num" [class.active]="p === page()" (click)="go(p)">{{ p }}</button>
+      }
+    }
+    <button
+      class="btn btn-secondary btn-sm"
+      [disabled]="page() >= pagesCount()"
+      (click)="go(page() + 1)"
+    >
+      Next ›
+    </button>
+  </nav>
+}

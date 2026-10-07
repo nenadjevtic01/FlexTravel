@@ -1,0 +1,12 @@
+<button
+  type="button"
+  class="compare"
+  [class.on]="on()"
+  [disabled]="!on() && compare.isFull()"
+  [attr.aria-pressed]="on()"
+  [title]="title()"
+  (click)="toggle($event)"
+>
+  <span aria-hidden="true">{{ on() ? '✓' : '⇄' }}</span>
+  {{ on() ? 'Comparing' : 'Compare' }}
+</button>

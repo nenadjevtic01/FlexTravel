@@ -1,0 +1,412 @@
+<div class="container page">
+  @if (!auth.isAgency()) {
+    <div class="card state">
+      <h3>For agency employees</h3>
+      <p>Sign in with an agency account to manage trips and reservations.</p>
+      <a class="btn btn-primary" routerLink="/login" [queryParams]="{ returnUrl: '/agency' }"
+        >Sign in</a
+      >
+    </div>
+  } @else {
+    <header class="page-header">
+      <span class="eyebrow">Agency panel · signed in as {{ auth.user()?.identity }}</span>
+      <h1>{{ overview.value()?.agencyName ?? 'Agency' }}</h1>
+      @if (overview.value()?.rating; as rating) {
+        <app-rating [average]="rating.average" [count]="rating.count" />
+      }
+    </header>
+
+    @if (stats(); as s) {
+      <div class="stats">
+        <div class="card stat">
+          <strong>{{ s.pending }}</strong
+          ><span>awaiting confirmation</span>
+        </div>
+        <div class="card stat">
+          <strong>{{ s.upcoming }}</strong
+          ><span>trips on sale</span>
+        </div>
+        <div class="card stat">
+          <strong>{{ s.seats }} / {{ s.capacity }}</strong
+          ><span>seats booked on upcoming trips</span>
+        </div>
+      </div>
+    }
+
+    <nav class="tabs">
+      <button [class.active]="tab() === 'reservations'" (click)="selectTab('reservations')">
+        Reservations
+        @if (stats()?.pending) {
+          <span class="count">{{ stats()?.pending }}</span>
+        }
+      </button>
+      <button [class.active]="tab() === 'trips'" (click)="selectTab('trips')">Trips</button>
+      <button [class.active]="tab() === 'calendar'" (click)="selectTab('calendar')">
+        Calendar
+      </button>
+      <button [class.active]="tab() === 'report'" (click)="selectTab('report')">Report</button>
+      <button [class.active]="tab() === 'reviews'" (click)="selectTab('reviews')">
+        Reviews
+        @if (overview.value()?.unansweredReviews) {
+          <span class="count">{{ overview.value()?.unansweredReviews }}</span>
+        }
+      </button>
+      <button [class.active]="tab() === 'promo'" (click)="selectTab('promo')">Promo codes</button>
+      <button [class.active]="tab() === 'team'" (click)="selectTab('team')">Team</button>
+      <button [class.active]="tab() === 'profile'" (click)="selectTab('profile')">
+        Public page
+      </button>
+    </nav>
+
+    @if (notice(); as n) {
+      <p class="alert alert-success">{{ n }}</p>
+    }
+    @if (actionError(); as e) {
+      <p class="alert">{{ e }}</p>
+    }
+
+    @switch (tab()) {
+      @case ('reservations') {
+        <div class="toolbar">
+          <div class="chips">
+            @for (s of statuses; track s) {
+              <button class="chip" [class.active]="status() === s" (click)="setStatus(s)">
+                {{ s === '' ? 'All' : s === 'Pending' ? 'Awaiting confirmation' : s }}
+              </button>
+            }
+          </div>
+          @if (filteredTrip(); as ft) {
+            <span class="badge">
+              {{ ft.name }}
+              <button class="clear" aria-label="Show all trips" (click)="clearTripFilter()">
+                ×
+              </button>
+            </span>
+          }
+        </div>
+
+        @if (reservations.hasValue()) {
+          @let result = reservations.value();
+          @for (r of result.items; track r.id) {
+            <article class="card reservation">
+              <div class="main">
+                <div class="head">
+                  <code>{{ r.code }}</code>
+                  <app-status-badge [status]="r.status" />
+                  <app-payment-badge [payment]="r.payment" />
+                  @if (r.unreadMessages) {
+                    <a class="badge badge-danger" [routerLink]="['/reservations', r.id]"
+                      >💬 {{ r.unreadMessages }} new</a
+                    >
+                  }
+                  <span class="muted small">booked {{ formatDate(r.createdAt) }}</span>
+                </div>
+                <h3>
+                  <a [routerLink]="['/reservations', r.id]">{{ r.tripName }}</a>
+                </h3>
+                <p class="muted small">
+                  📅 {{ formatDateRange(r.startDate, r.endDate) }} · 🏨 {{ r.accommodation }} · 👥
+                  {{ formatTravelers(r.adults, r.children) }} · 🛏️
+                  @for (room of r.rooms; track room.roomId; let last = $last) {
+                    {{ room.count }} × {{ room.roomType }}{{ last ? '' : ', ' }}
+                  }
+                  @if (r.extras.length) {
+                    · ➕
+                    @for (e of r.extras; track e.extraId; let last = $last) {
+                      {{ e.quantity > 1 ? e.quantity + ' × ' : '' }}{{ e.name
+                      }}{{ last ? '' : ', ' }}
+                    }
+                  }
+                </p>
+                @if (r.status === 'Pending' && r.decideBy) {
+                  <p class="decide-by small">
+                    ⏳ Confirm or reject by {{ formatDateTime(r.decideBy) }}, otherwise it expires.
+                  </p>
+                }
+                @if (r.customer; as c) {
+                  <p class="customer">
+                    <strong>{{ c.name }}</strong> ·
+                    <a [href]="'mailto:' + c.email">{{ c.email }}</a> · {{ c.phone }}
+                  </p>
+                }
+                @if (r.handledBy && r.handledAt) {
+                  <p class="muted small handled">
+                    {{ r.status === 'Rejected' ? '✖ Rejected' : '✔ Confirmed' }} by
+                    <strong>{{ r.handledBy }}</strong> · {{ formatDateTime(r.handledAt) }}
+                  </p>
+                }
+                @if (r.note) {
+                  <p class="muted small note">“{{ r.note }}”</p>
+                }
+
+                @if (rejectingId() === r.id) {
+                  <div class="reject">
+                    <textarea
+                      class="input"
+                      rows="2"
+                      maxlength="500"
+                      placeholder="Reason for the customer (optional)"
+                      [value]="rejectReason()"
+                      (input)="rejectReason.set($any($event.target).value)"
+                    ></textarea>
+                    <div class="reject-actions">
+                      <button
+                        class="btn btn-primary btn-sm"
+                        [disabled]="busyId() === r.id"
+                        (click)="reject(r)"
+                      >
+                        Reject reservation
+                      </button>
+                      <button class="btn btn-secondary btn-sm" (click)="rejectingId.set(null)">
+                        Back
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+              <div class="side">
+                <strong class="total">{{ formatMoney(r.totalPrice) }}</strong>
+                @if (r.status === 'Pending' && rejectingId() !== r.id) {
+                  <button
+                    class="btn btn-primary btn-sm"
+                    [disabled]="busyId() === r.id"
+                    (click)="confirmReservation(r)"
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    class="btn btn-secondary btn-sm"
+                    [disabled]="busyId() === r.id"
+                    (click)="startReject(r)"
+                  >
+                    Reject
+                  </button>
+                }
+                <a class="details" [routerLink]="['/reservations', r.id]">Details →</a>
+              </div>
+            </article>
+          } @empty {
+            <div class="state">
+              <h3>Nothing here</h3>
+              <p>No reservations match this filter.</p>
+            </div>
+          }
+          <app-pagination
+            [page]="result.currentPage"
+            [pagesCount]="result.pagesCount"
+            (pageChange)="page.set($event)"
+          />
+        } @else if (reservations.error(); as error) {
+          <p class="alert">{{ errorText(error) }}</p>
+        } @else {
+          <div class="skeleton" style="height: 240px"></div>
+        }
+      }
+
+      @case ('trips') {
+        <div class="toolbar">
+          <span class="muted small">Upcoming, departed and withdrawn trips of your agency.</span>
+          <a class="btn btn-primary btn-sm" routerLink="/agency/trips/new">+ New trip</a>
+        </div>
+        @if (overview.hasValue()) {
+          <div class="card table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Trip</th>
+                  <th>Dates</th>
+                  <th>Price</th>
+                  <th>Occupancy</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (t of overview.value().trips; track t.id) {
+                  <tr [class.inactive]="tripState(t) !== 'On sale'">
+                    <td>
+                      <a [routerLink]="['/trips', t.id]">{{ t.name }}</a>
+                      <span class="muted small block">{{ t.destination }}</span>
+                      <span class="muted small block">
+                        by {{ t.createdBy ?? 'unknown' }}
+                        @if (t.updatedBy) {
+                          · edited by {{ t.updatedBy }}
+                        }
+                      </span>
+                    </td>
+                    <td class="nowrap">{{ formatDateRange(t.startDate, t.endDate) }}</td>
+                    <td>
+                      {{ formatMoney(t.pricePerPerson) }}
+                      @if (t.offer) {
+                        <span class="badge offer block-badge">{{
+                          offerLabel(t.offer, t.offerPercent)
+                        }}</span>
+                      }
+                    </td>
+                    <td>
+                      <div class="bar"><span [style.width.%]="occupancy(t)"></span></div>
+                      <span class="small">{{ t.seatsBooked }} / {{ t.capacity }}</span>
+                      @if (t.pendingReservations) {
+                        <button class="link small" (click)="showTripReservations(t)">
+                          · {{ t.pendingReservations }} pending
+                        </button>
+                      }
+                      @if (t.waiting) {
+                        <span class="small waiting block"
+                          >⏳ {{ t.waiting }} waiting for seats</span
+                        >
+                      }
+                    </td>
+                    <td>
+                      <span class="badge" [class.badge-success]="tripState(t) === 'On sale'">{{
+                        tripState(t)
+                      }}</span>
+                    </td>
+                    <td>
+                      <div class="row-actions">
+                        @if (tripState(t) === 'On sale') {
+                          <a
+                            class="btn btn-primary btn-sm"
+                            [routerLink]="['/agency/trips', t.id, 'edit']"
+                            >Edit</a
+                          >
+                        }
+                        <button class="btn btn-secondary btn-sm" (click)="showTripReservations(t)">
+                          Reservations
+                        </button>
+                        <a
+                          class="btn btn-secondary btn-sm"
+                          [routerLink]="['/agency/trips', t.id, 'passengers']"
+                          >Passengers</a
+                        >
+                        <button class="btn btn-secondary btn-sm" (click)="startAddDate(t)">
+                          + Date
+                        </button>
+                        @if (tripState(t) === 'On sale') {
+                          <button
+                            class="btn btn-secondary btn-sm"
+                            [disabled]="busyId() === t.id"
+                            (click)="withdraw(t)"
+                          >
+                            Withdraw
+                          </button>
+                        }
+                      </div>
+                      @if (addingDateFor() === t.id) {
+                        <div class="add-date">
+                          <label class="small">
+                            New departure (same program, {{ nightsOf(t) }} nights)
+                            <input
+                              class="input"
+                              type="date"
+                              [min]="tomorrow"
+                              [value]="newDate()"
+                              (change)="newDate.set($any($event.target).value)"
+                            />
+                          </label>
+                          <button
+                            class="btn btn-primary btn-sm"
+                            [disabled]="!newDate() || busyId() === t.id"
+                            (click)="addDate(t)"
+                          >
+                            Add
+                          </button>
+                          <button
+                            class="btn btn-secondary btn-sm"
+                            (click)="addingDateFor.set(null)"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+
+      @case ('reviews') {
+        <div class="toolbar">
+          <div class="chips">
+            <button
+              class="chip"
+              [class.active]="unansweredOnly()"
+              (click)="unansweredOnly.set(true)"
+            >
+              Waiting for a reply
+            </button>
+            <button
+              class="chip"
+              [class.active]="!unansweredOnly()"
+              (click)="unansweredOnly.set(false)"
+            >
+              All reviews
+            </button>
+          </div>
+        </div>
+        @if (overview.hasValue()) {
+          <section class="card card-body">
+            <app-review-list
+              [filter]="reviewFilter()"
+              mode="agency"
+              [showTrip]="true"
+              [perPage]="10"
+              [emptyText]="unansweredOnly() ? 'All reviews have a reply. 🎉' : 'No reviews yet.'"
+              (changed)="overview.reload()"
+            />
+          </section>
+        }
+      }
+
+      @case ('calendar') {
+        <app-agency-calendar />
+      }
+
+      @case ('report') {
+        <app-agency-report />
+      }
+
+      @case ('profile') {
+        @if (overview.hasValue()) {
+          <app-agency-profile [agencyId]="overview.value().agencyId" />
+        }
+      }
+
+      @case ('promo') {
+        <app-promo-codes />
+      }
+
+      @case ('team') {
+        @if (overview.hasValue()) {
+          <div class="team">
+            @for (m of overview.value().team; track m.id) {
+              <article class="card member" [class.me]="m.id === auth.user()?.id">
+                <app-avatar [src]="m.avatar" [name]="m.name" [size]="42" />
+                <div>
+                  <strong>{{ m.name }}</strong>
+                  @if (m.id === auth.user()?.id) {
+                    <span class="badge">you</span>
+                  }
+                  @if (!m.isActive) {
+                    <span class="badge badge-danger">blocked</span>
+                  }
+                  <span class="muted small block">{{ m.email }}</span>
+                </div>
+                <dl class="facts">
+                  <dt>Trips published</dt>
+                  <dd>{{ m.tripsCreated }}</dd>
+                  <dt>Reservations handled</dt>
+                  <dd>{{ m.reservationsHandled }}</dd>
+                </dl>
+              </article>
+            }
+          </div>
+          <p class="muted small">New employees are added by the system administrator.</p>
+        }
+      }
+    }
+  }
+</div>

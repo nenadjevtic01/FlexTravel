@@ -1,0 +1,19 @@
+.stars {
+  display: inline-flex;
+  gap: 2px;
+}
+button {
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  font-size: 1.7rem;
+  line-height: 1;
+  color: var(--color-border);
+  cursor: pointer;
+}
+button.on {
+  color: var(--color-gold);
+}
+button:hover {
+  transform: scale(1.1);
+}

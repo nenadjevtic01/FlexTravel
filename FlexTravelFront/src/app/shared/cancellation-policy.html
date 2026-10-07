@@ -1,0 +1,8 @@
+<ol class="policy">
+  @for (tier of rows(); track tier.minDaysBefore) {
+    <li [class.current]="tier.current" [class.past]="tier.past">
+      <span>{{ tier.label }}</span>
+      <strong>{{ tier.feePercent === 0 ? 'free' : tier.feePercent + '%' }}</strong>
+    </li>
+  }
+</ol>

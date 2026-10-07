@@ -1,0 +1,70 @@
+<div class="container page">
+  <header class="page-header">
+    <span class="eyebrow">Your wish list</span>
+    <h1>Favorite destinations</h1>
+    <p class="muted">
+      When an agency publishes a new trip to one of these places, you get a notification.
+    </p>
+  </header>
+
+  @if (!auth.canFavorite()) {
+    <div class="state">
+      <h3>Favorites are for customer accounts</h3>
+      <a class="btn btn-primary" routerLink="/login" [queryParams]="{ returnUrl: '/favorites' }"
+        >Sign in</a
+      >
+    </div>
+  } @else if (!favorites.loaded()) {
+    <div class="grid">
+      @for (i of [1, 2, 3]; track i) {
+        <div class="skeleton" style="height: 260px"></div>
+      }
+    </div>
+  } @else if (favorites.items().length === 0) {
+    <div class="state">
+      <h3>No favorites yet</h3>
+      <p>Tap the ♡ on a destination to save it here.</p>
+      <a class="btn btn-primary" routerLink="/">Explore destinations</a>
+    </div>
+  } @else {
+    <div class="grid">
+      @for (f of favorites.items(); track f.id) {
+        <article class="card favorite">
+          <a class="image" [routerLink]="['/destinations', f.id]">
+            @if (f.image) {
+              <img [src]="imageUrl(f.image)" [alt]="f.name" loading="lazy" />
+            }
+          </a>
+          <span class="heart"
+            ><app-favorite-button [destinationId]="f.id" [destinationName]="f.name"
+          /></span>
+          <div class="card-body">
+            <span class="eyebrow">{{ f.country }}</span>
+            <h3>
+              <a [routerLink]="['/destinations', f.id]">{{ f.name }}</a>
+            </h3>
+            @if (f.upcomingTrips > 0) {
+              <p class="muted">
+                {{ f.upcomingTrips }} upcoming {{ f.upcomingTrips === 1 ? 'trip' : 'trips' }}, next
+                departure
+                {{ formatDate(f.nextDeparture!) }}
+              </p>
+              <a
+                class="btn btn-primary btn-sm"
+                routerLink="/trips"
+                [queryParams]="{ destinationId: f.id }"
+                >See trips</a
+              >
+            } @else {
+              <p class="muted">No trips on sale yet. We will let you know when there is one.</p>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+
+  @if (auth.canSetPriceAlerts()) {
+    <app-price-alerts />
+  }
+</div>

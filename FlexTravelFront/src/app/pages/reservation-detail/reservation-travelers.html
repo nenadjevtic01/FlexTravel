@@ -1,0 +1,64 @@
+<div class="head">
+  <h3>Travelers</h3>
+  @if (canEdit() && !editing()) {
+    <button class="btn btn-secondary btn-sm" (click)="startEdit()">Correct names</button>
+  }
+</div>
+
+@if (!editing()) {
+  @if (travelers().length) {
+    <ol class="list">
+      @for (t of travelers(); track $index) {
+        <li>
+          <strong>{{ t.firstName }} {{ t.lastName }}</strong>
+          <span class="muted small"
+            >born {{ formatDate(t.dateOfBirth) }}{{ t.isChild ? ' · child' : '' }}</span
+          >
+        </li>
+      }
+    </ol>
+  } @else {
+    <p class="muted small">No traveler names were entered for this reservation.</p>
+  }
+} @else {
+  @for (t of draft(); track $index; let i = $index) {
+    <div class="row">
+      <input
+        class="input"
+        placeholder="First name"
+        maxlength="50"
+        [value]="t.firstName"
+        (input)="set(i, { firstName: $any($event.target).value })"
+      />
+      <input
+        class="input"
+        placeholder="Last name"
+        maxlength="50"
+        [value]="t.lastName"
+        (input)="set(i, { lastName: $any($event.target).value })"
+      />
+      <input
+        class="input"
+        type="date"
+        [value]="t.dateOfBirth.slice(0, 10)"
+        (change)="set(i, { dateOfBirth: $any($event.target).value })"
+      />
+    </div>
+  }
+  <p class="muted small">
+    The number of adults and children stays as booked; ages are counted on the day of departure.
+  </p>
+  @if (errors().length) {
+    <ul class="alert">
+      @for (e of errors(); track $index) {
+        <li>{{ e }}</li>
+      }
+    </ul>
+  }
+  <div class="actions">
+    <button class="btn btn-primary btn-sm" [disabled]="busy()" (click)="save()">
+      Save travelers
+    </button>
+    <button class="btn btn-secondary btn-sm" (click)="editing.set(false)">Cancel</button>
+  </div>
+}

@@ -1,0 +1,96 @@
+<section class="card card-body">
+  <div class="head">
+    <div>
+      <h3>Background jobs</h3>
+      <p class="muted small">
+        Every {{ jobs.value()?.intervalMinutes ?? '…' }} minutes the server expires reservations the
+        agency did not confirm within 3 days, reminds customers of payments due in 3 days, invites
+        travelers back from a trip to review it, closes waitlists of departed trips and checks price
+        alerts.
+        @if (jobs.value()?.nextRunAt; as next) {
+          Next run {{ formatDateTime(next) }}.
+        }
+      </p>
+    </div>
+    <button class="btn btn-primary btn-sm" [disabled]="running()" (click)="run()">
+      {{ running() ? 'Running…' : 'Run now' }}
+    </button>
+  </div>
+
+  @if (lastRun(); as r) {
+    <p class="alert alert-success">Done: {{ describe(r) }}.</p>
+  }
+  @if (jobError(); as e) {
+    <p class="alert">{{ e }}</p>
+  }
+
+  @if (jobs.hasValue()) {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Started</th>
+            <th>By</th>
+            <th>Expired</th>
+            <th>Payment reminders</th>
+            <th>Review invitations</th>
+            <th>Price alerts</th>
+            <th>Waitlists closed</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of jobs.value().runs; track r.id) {
+            <tr [class.failed]="r.error">
+              <td [title]="formatDateTime(r.startedAt)">{{ timeAgo(r.startedAt) }}</td>
+              <td>{{ r.startedBy === 'Schedule' ? 'automatic' : r.startedBy }}</td>
+              <td>{{ r.expiredReservations }}</td>
+              <td>{{ r.paymentReminders }}</td>
+              <td>{{ r.reviewInvitations }}</td>
+              <td>{{ r.priceAlerts }}</td>
+              <td>{{ r.closedWaitlists }}</td>
+            </tr>
+            @if (r.error) {
+              <tr class="failed">
+                <td colspan="7">⚠️ {{ r.error }}</td>
+              </tr>
+            }
+          } @empty {
+            <tr>
+              <td colspan="7" class="muted">No runs yet.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<section class="card card-body">
+  <h3>Exchange rates</h3>
+  <p class="muted small">
+    Customers can see prices in these currencies. Prices are set and paid in euros, so the rate only
+    changes what is shown.
+  </p>
+  @for (rate of rates.value() ?? []; track rate.currency) {
+    <form class="rate" (submit)="saveRate($event, rate)">
+      <label for="rate-{{ rate.currency }}">1 EUR =</label>
+      <input
+        id="rate-{{ rate.currency }}"
+        class="input"
+        type="number"
+        min="0.0001"
+        step="0.0001"
+        [value]="rateValue()[rate.currency] ?? rate.ratePerEuro"
+        (input)="setRate(rate.currency, $any($event.target).value)"
+      />
+      <strong>{{ rate.currency }}</strong>
+      <button class="btn btn-secondary btn-sm" type="submit" [disabled]="savingRate()">Save</button>
+      <span class="muted small">
+        updated {{ timeAgo(rate.updatedAt) }}{{ rate.updatedBy ? ' by ' + rate.updatedBy : '' }}
+      </span>
+    </form>
+  }
+  @if (rateMessage(); as m) {
+    <p class="alert" [class.alert-success]="!rateFailed()">{{ m }}</p>
+  }
+</section>

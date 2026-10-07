@@ -1,0 +1,190 @@
+<div class="container page">
+  <header class="page-header">
+    <span class="eyebrow">Account</span>
+    <h1>My profile</h1>
+  </header>
+
+  @if (!auth.hasProfile()) {
+    <div class="state">
+      <h3>Sign in to see your profile</h3>
+      <a class="btn btn-primary" routerLink="/login" [queryParams]="{ returnUrl: '/profile' }"
+        >Sign in</a
+      >
+    </div>
+  } @else if (profile.hasValue()) {
+    @let p = profile.value();
+    <section class="card card-body photo">
+      <app-avatar [src]="p.avatar" [name]="p.firstName" [size]="96" />
+      <div>
+        <h2>Profile photo</h2>
+        <p class="muted small">
+          Shown in the header, in messages with the agency and next to your reviews. The middle of
+          the picture is cut to a square. JPEG, PNG or WebP.
+        </p>
+        @if (auth.canChangeAvatar()) {
+          <div class="photo-actions">
+            <label class="btn btn-primary btn-sm" [class.disabled]="photoBusy()">
+              {{ photoBusy() ? 'Uploading…' : p.avatar ? 'Change photo' : 'Upload photo' }}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                hidden
+                [disabled]="photoBusy()"
+                (change)="uploadPhoto($event)"
+              />
+            </label>
+            @if (p.avatar) {
+              <button
+                class="btn btn-secondary btn-sm"
+                [disabled]="photoBusy()"
+                (click)="removePhoto()"
+              >
+                Remove photo
+              </button>
+            }
+          </div>
+        }
+        @if (photoError(); as e) {
+          <p class="alert">{{ e }}</p>
+        }
+      </div>
+    </section>
+
+    <div class="layout">
+      <form class="card card-body form" (submit)="save($event)">
+        <h2>Personal details</h2>
+        <p class="muted small">
+          {{ roleLabel(p.role) }}{{ p.agency ? ' at ' + p.agency : '' }} · member since
+          {{ formatDate(p.memberSince) }}
+        </p>
+        <div class="grid">
+          <label class="field">
+            <span>First name</span>
+            <input
+              class="input"
+              maxlength="50"
+              autocomplete="given-name"
+              [value]="firstName()"
+              (input)="firstName.set($any($event.target).value)"
+            />
+          </label>
+          <label class="field">
+            <span>Last name</span>
+            <input
+              class="input"
+              maxlength="50"
+              autocomplete="family-name"
+              [value]="lastName()"
+              (input)="lastName.set($any($event.target).value)"
+            />
+          </label>
+          <label class="field">
+            <span>E-mail <span class="muted">(used to sign in, cannot be changed)</span></span>
+            <input class="input" [value]="p.email" disabled />
+          </label>
+          <label class="field">
+            <span>Phone</span>
+            <input
+              class="input"
+              maxlength="20"
+              autocomplete="tel"
+              [value]="phone()"
+              (input)="phone.set($any($event.target).value)"
+            />
+          </label>
+          <label class="field">
+            <span>Address</span>
+            <input
+              class="input"
+              maxlength="100"
+              autocomplete="street-address"
+              [value]="address()"
+              (input)="address.set($any($event.target).value)"
+            />
+          </label>
+          <label class="field">
+            <span>City</span>
+            <input
+              class="input"
+              maxlength="50"
+              autocomplete="address-level2"
+              [value]="city()"
+              (input)="city.set($any($event.target).value)"
+            />
+          </label>
+        </div>
+        @if (profileErrors().length) {
+          <ul class="alert">
+            @for (e of profileErrors(); track $index) {
+              <li>{{ e }}</li>
+            }
+          </ul>
+        }
+        @if (profileSaved()) {
+          <p class="alert alert-success">Your details are saved.</p>
+        }
+        <div>
+          <button class="btn btn-primary" type="submit" [disabled]="saving()">
+            {{ saving() ? 'Saving…' : 'Save details' }}
+          </button>
+        </div>
+      </form>
+
+      <form class="card card-body form" (submit)="changePassword($event)">
+        <h2>Password</h2>
+        <label class="field">
+          <span>Current password</span>
+          <input
+            class="input"
+            type="password"
+            autocomplete="current-password"
+            [value]="currentPassword()"
+            (input)="currentPassword.set($any($event.target).value)"
+          />
+        </label>
+        <label class="field">
+          <span>New password</span>
+          <input
+            class="input"
+            type="password"
+            autocomplete="new-password"
+            [value]="newPassword()"
+            (input)="newPassword.set($any($event.target).value)"
+          />
+          <small class="muted">At least 8 characters, with a letter and a digit.</small>
+        </label>
+        <label class="field">
+          <span>Repeat the new password</span>
+          <input
+            class="input"
+            type="password"
+            autocomplete="new-password"
+            [value]="repeatPassword()"
+            (input)="repeatPassword.set($any($event.target).value)"
+          />
+        </label>
+        @if (passwordErrors().length) {
+          <ul class="alert">
+            @for (e of passwordErrors(); track $index) {
+              <li>{{ e }}</li>
+            }
+          </ul>
+        }
+        @if (passwordSaved()) {
+          <p class="alert alert-success">
+            Your password is changed. You stay signed in here; other devices are signed out.
+          </p>
+        }
+        <div>
+          <button class="btn btn-primary" type="submit" [disabled]="saving()">
+            Change password
+          </button>
+        </div>
+      </form>
+    </div>
+  } @else if (profile.error()) {
+    <p class="alert">Your profile could not be loaded.</p>
+  } @else {
+    <div class="skeleton" style="height: 320px"></div>
+  }
+</div>

@@ -1,0 +1,82 @@
+<div class="container page">
+  <a class="back no-print" routerLink="/agency" [queryParams]="{ tab: 'trips' }">← Trips</a>
+
+  @if (manifest.hasValue()) {
+    @let m = manifest.value();
+    <header class="page-header head">
+      <div>
+        <span class="eyebrow">Passenger list</span>
+        <h1>{{ m.tripName }}</h1>
+        <p class="muted">
+          {{ m.destination }} · {{ formatDateRange(m.startDate, m.endDate) }} · {{ m.transport }} ·
+          <strong>{{ m.travelers }}</strong> of {{ m.capacity }} seats
+        </p>
+      </div>
+      <div class="actions no-print">
+        <button class="btn btn-secondary btn-sm" (click)="download(m)">⬇ CSV (Excel)</button>
+        <button class="btn btn-secondary btn-sm" (click)="print()">🖨 Print</button>
+      </div>
+    </header>
+
+    @if (m.reservations.length === 0) {
+      <div class="state"><h3>No travelers yet</h3></div>
+    } @else {
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Traveler</th>
+              <th>Date of birth</th>
+              <th>Age</th>
+              <th>Reservation</th>
+              <th>Hotel · rooms</th>
+              <th>Contact</th>
+              <th>Payment</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of m.reservations; track r.reservationId; let ri = $index) {
+              @for (t of r.travelers; track $index; let first = $first; let ti = $index) {
+                <tr [class.group]="first">
+                  <td class="muted">{{ number(m, ri, ti) }}</td>
+                  <td>
+                    <strong>{{ t.lastName }}</strong
+                    >, {{ t.firstName }}
+                    @if (t.isChild) {
+                      <span class="badge">child</span>
+                    }
+                  </td>
+                  <td class="nowrap">{{ formatDate(t.dateOfBirth) }}</td>
+                  <td>{{ t.age }}</td>
+                  @if (first) {
+                    <td [attr.rowspan]="r.travelers.length">
+                      <a [routerLink]="['/reservations', r.reservationId]"
+                        ><code>{{ r.code }}</code></a
+                      >
+                      <app-status-badge [status]="r.status" />
+                      @if (r.note) {
+                        <span class="muted small block">“{{ r.note }}”</span>
+                      }
+                    </td>
+                    <td [attr.rowspan]="r.travelers.length">
+                      {{ r.hotel }}<span class="muted small block">{{ r.rooms }}</span>
+                    </td>
+                    <td [attr.rowspan]="r.travelers.length">
+                      {{ r.customer }}<span class="muted small block">{{ r.phone }}</span>
+                    </td>
+                    <td [attr.rowspan]="r.travelers.length">{{ r.paymentStatus }}</td>
+                  }
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  } @else if (manifest.error(); as error) {
+    <p class="alert">{{ errorText(error) }}</p>
+  } @else {
+    <div class="skeleton" style="height: 320px"></div>
+  }
+</div>

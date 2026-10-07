@@ -1,0 +1,241 @@
+<div class="container page">
+  @if (destination.error(); as error) {
+    <div class="state">
+      @if (isNotFound(error)) {
+        <h3>Destination not found</h3>
+        <p>It may have been removed, or the link is wrong.</p>
+      } @else {
+        <h3>Destination could not be loaded</h3>
+        <p>{{ errorText(error) }}</p>
+      }
+      <a class="btn btn-secondary" routerLink="/">Back to destinations</a>
+    </div>
+  } @else if (destination.hasValue()) {
+    @let d = destination.value();
+
+    <nav class="breadcrumbs">
+      <a routerLink="/">Destinations</a>
+      <span>/</span>
+      <button class="crumb" (click)="showCountry(d)">{{ d.country.name }}</button>
+      <span>/</span>
+      <span>{{ d.name }}</span>
+    </nav>
+
+    <header class="title">
+      <span class="eyebrow">{{ d.country.continent }} · {{ d.country.name }}</span>
+      <div class="title-row">
+        <h1>{{ d.name }}</h1>
+        <app-favorite-button [destinationId]="d.id" [destinationName]="d.name" [withLabel]="true" />
+      </div>
+      @if (d.rating) {
+        <app-rating [average]="d.rating.average" [count]="d.rating.count" />
+      }
+    </header>
+
+    @if (d.images.length) {
+      <section class="gallery">
+        <img
+          class="main"
+          [src]="imageUrl(d.images[selectedImage()].src)"
+          [alt]="d.images[selectedImage()].alt"
+        />
+        <div class="thumbs">
+          @for (image of d.images; track image.src; let i = $index) {
+            <button
+              [class.active]="i === selectedImage()"
+              (click)="selectedImage.set(i)"
+              [attr.aria-label]="image.alt"
+            >
+              <img [src]="imageUrl(image.src)" [alt]="image.alt" loading="lazy" />
+            </button>
+          }
+        </div>
+      </section>
+    }
+
+    <div class="layout">
+      <div class="content">
+        <section class="card card-body">
+          <h2>About</h2>
+          <p class="lead">{{ d.description }}</p>
+        </section>
+
+        <section>
+          <div class="section-head">
+            <h2>Trips to {{ d.name }}</h2>
+            <a class="muted" routerLink="/trips">All trips →</a>
+          </div>
+          @if (trips.hasValue()) {
+            @if (trips.value().items.length) {
+              <div class="trips">
+                @for (trip of trips.value().items; track trip.id) {
+                  <app-trip-card [trip]="trip" />
+                }
+              </div>
+            } @else {
+              <p class="card card-body muted no-trips">
+                No upcoming trips to {{ d.name }} yet. Check the hotels below or browse other trips.
+              </p>
+            }
+          }
+        </section>
+
+        @if (d.attractions.length) {
+          <section class="card card-body">
+            <h2>Things to see</h2>
+            <ul class="sights">
+              @for (a of d.attractions; track a.id) {
+                <li>
+                  <span class="sight-icon" aria-hidden="true">{{
+                    attractionIcon(a.category)
+                  }}</span>
+                  <div>
+                    <strong>{{ a.name }}</strong>
+                    <span class="muted small"> · {{ a.category }}</span>
+                    <p>{{ a.description }}</p>
+                  </div>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        @if (d.climate) {
+          <section class="card card-body">
+            <h2>☀️ Climate</h2>
+            <p>{{ d.climate }}</p>
+          </section>
+        }
+
+        <section>
+          <div class="section-head">
+            <h2>Accommodation</h2>
+            <span class="muted">
+              {{ totals().accommodations }} properties · {{ totals().rooms }} rooms ·
+              {{ totals().beds }} beds
+            </span>
+          </div>
+
+          @for (accommodation of d.accommodations; track accommodation.id) {
+            <article class="card accommodation">
+              <div class="accommodation-head">
+                <div>
+                  <h3>{{ accommodation.name }}</h3>
+                  <span class="badge">{{ accommodation.type }}</span>
+                  <app-stars [value]="accommodation.stars" />
+                  @if (accommodation.rating?.count) {
+                    <app-rating
+                      [average]="accommodation.rating!.average"
+                      [count]="accommodation.rating!.count"
+                    />
+                  }
+                </div>
+                <div class="capacity">
+                  <strong>{{ roomsCount(accommodation) }}</strong> rooms
+                  <span class="muted">· {{ bedsCount(accommodation) }} beds</span>
+                </div>
+              </div>
+
+              @if (accommodation.rooms.length) {
+                <table class="rooms">
+                  <thead>
+                    <tr>
+                      <th>Room type</th>
+                      <th>Capacity</th>
+                      <th>Rooms</th>
+                      <th>A/C</th>
+                      <th>Balcony</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (room of accommodation.rooms; track room.id) {
+                      <tr>
+                        <td>{{ room.roomType }}</td>
+                        <td>👤 × {{ room.capacity }}</td>
+                        <td>{{ room.numberOfRooms }}</td>
+                        <td>{{ room.ac ? '✔' : '—' }}</td>
+                        <td>{{ room.balcony ? '✔' : '—' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              } @else {
+                <p class="muted no-rooms">No room categories have been entered yet.</p>
+              }
+            </article>
+          } @empty {
+            <p class="muted">There is no accommodation for this destination yet.</p>
+          }
+        </section>
+
+        <section class="card card-body">
+          <h2>What travelers say</h2>
+          <app-review-list
+            [filter]="{ destinationId: d.id }"
+            [showTrip]="true"
+            emptyText="No reviews for this destination yet."
+          />
+        </section>
+      </div>
+
+      <aside class="sidebar">
+        <app-price-alert [destinationId]="d.id" [destinationName]="d.name" />
+
+        <section class="card card-body">
+          <h3>{{ d.country.name }}</h3>
+          <dl class="facts">
+            <dt>Continent</dt>
+            <dd>{{ d.country.continent }}</dd>
+            <dt>Capital</dt>
+            <dd>{{ d.country.capitalCity ?? '—' }}</dd>
+            <dt>Language</dt>
+            <dd>{{ d.country.language ?? '—' }}</dd>
+            <dt>Currency</dt>
+            <dd>{{ d.country.currency ?? '—' }}</dd>
+            <dt>Population</dt>
+            <dd>{{ formatNumber(d.country.population) }}</dd>
+            <dt>Area</dt>
+            <dd>{{ formatNumber(d.country.totalArea) }} km²</dd>
+          </dl>
+        </section>
+
+        @if (d.country.visa; as visa) {
+          <section class="card card-body">
+            <h3>🛂 Visa</h3>
+            <p class="visa-type">{{ visa.type }}</p>
+            <dl class="visa-facts">
+              <dt>Duration</dt>
+              <dd>{{ visa.duration }}</dd>
+              <dt>Requirements</dt>
+              <dd class="muted">{{ visa.requirements }}</dd>
+            </dl>
+          </section>
+        }
+
+        @if (d.latitude !== null && d.longitude !== null) {
+          <app-weather-card [destinationId]="d.id" />
+
+          <section class="card card-body">
+            <h3>📍 Location</h3>
+            <app-map-view
+              [markers]="[{ id: d.id, lat: d.latitude, lng: d.longitude, label: d.name }]"
+              [zoom]="7"
+              height="220px"
+            />
+          </section>
+        }
+
+        @if (d.country.safety; as safety) {
+          <section class="card card-body">
+            <h3>🛡️ Safety</h3>
+            <app-safety-meter [level]="safety.level" [showLabel]="true" />
+            <p class="small muted">{{ safety.advices }}</p>
+          </section>
+        }
+      </aside>
+    </div>
+  } @else {
+    <div class="skeleton" style="height: 48px; width: 40%; margin-bottom: 24px"></div>
+    <div class="skeleton" style="height: 420px"></div>
+  }
+</div>

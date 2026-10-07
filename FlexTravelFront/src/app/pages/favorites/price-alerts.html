@@ -1,0 +1,55 @@
+<section class="alerts">
+  <h2>🔔 Price alerts</h2>
+  <p class="muted">
+    Set a limit on a destination page; you get a notification when a trip there costs at most that
+    much per person.
+  </p>
+  @if (alerts.hasValue()) {
+    @if (alerts.value().length) {
+      <ul>
+        @for (a of alerts.value(); track a.id) {
+          <li class="card">
+            <a class="thumb" [routerLink]="['/destinations', a.destinationId]">
+              @if (a.image) {
+                <img [src]="imageUrl(a.image)" [alt]="a.destination" loading="lazy" />
+              }
+            </a>
+            <div class="info">
+              <a [routerLink]="['/destinations', a.destinationId]"
+                ><strong>{{ a.destination }}</strong></a
+              >
+              <span class="muted small">{{ a.country }}</span>
+              <span>Limit {{ formatEuro(a.maxPrice) }} / person</span>
+            </div>
+            <div class="status">
+              @if (a.lowestPrice === null) {
+                <span class="muted small">No trips on sale yet</span>
+              } @else if (a.isMet) {
+                <span class="badge badge-success">✓ From {{ formatMoney(a.lowestPrice) }}</span>
+                <a class="small" [routerLink]="['/trips', a.lowestPriceTripId]">See the trip</a>
+              } @else {
+                <span class="badge">Now from {{ formatMoney(a.lowestPrice) }}</span>
+              }
+              @if (a.lastNotifiedAt) {
+                <span class="muted small">notified {{ timeAgo(a.lastNotifiedAt) }}</span>
+              }
+            </div>
+            <button
+              class="remove"
+              [disabled]="busy() === a.id"
+              (click)="remove(a)"
+              aria-label="Remove alert"
+            >
+              Remove
+            </button>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="muted small">No price alerts yet.</p>
+    }
+  }
+  @if (error(); as e) {
+    <p class="alert">{{ e }}</p>
+  }
+</section>

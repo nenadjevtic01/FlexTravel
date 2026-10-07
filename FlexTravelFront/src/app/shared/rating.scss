@@ -1,0 +1,17 @@
+.rating {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+.star {
+  color: var(--color-gold);
+}
+.count {
+  color: var(--color-muted);
+}
+.light .count {
+  color: inherit;
+  opacity: 0.85;
+}

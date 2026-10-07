@@ -1,0 +1,95 @@
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+table {
+  width: 100%;
+  min-width: calc(150px + var(--cols) * 220px);
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.9rem;
+}
+th,
+td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+}
+tbody th {
+  width: 150px;
+  color: var(--color-muted);
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+thead th:first-child {
+  width: 150px;
+}
+.trip-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.trip-head img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+}
+.trip-head a {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+.remove {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-danger);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.price {
+  font-size: 1.2rem;
+  color: var(--color-accent);
+}
+.offer {
+  display: table;
+  margin-top: 4px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent-dark);
+}
+.best {
+  background: var(--color-success-soft);
+}
+.best-key {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 4px;
+  border-radius: 3px;
+  background: var(--color-success-soft);
+  border: 1px solid var(--color-success);
+  vertical-align: middle;
+}
+.low {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+.block {
+  display: block;
+}
+.small {
+  font-size: 0.82rem;
+}

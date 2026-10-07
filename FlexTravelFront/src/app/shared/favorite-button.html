@@ -1,0 +1,19 @@
+@if (auth.canFavorite()) {
+  @let on = favorites.isFavorite(destinationId());
+  <button
+    type="button"
+    class="heart"
+    [class.on]="on"
+    [class.labelled]="withLabel()"
+    [attr.aria-pressed]="on"
+    [attr.aria-label]="
+      (on ? 'Remove ' : 'Save ') + destinationName() + (on ? ' from favorites' : ' to favorites')
+    "
+    (click)="toggle($event)"
+  >
+    <span aria-hidden="true">{{ on ? '♥' : '♡' }}</span>
+    @if (withLabel()) {
+      {{ on ? 'Saved' : 'Save' }}
+    }
+  </button>
+}

@@ -1,0 +1,312 @@
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat {
+  padding: 16px 20px;
+
+  strong {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    color: var(--color-primary);
+  }
+
+  span {
+    font-size: 0.85rem;
+    color: var(--color-muted);
+  }
+}
+
+.tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+
+  button {
+    padding: 10px 16px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: none;
+    font: inherit;
+    font-weight: 600;
+    color: var(--color-muted);
+    cursor: pointer;
+
+    &.active {
+      border-color: var(--color-accent);
+      color: var(--color-text);
+    }
+  }
+
+  .count {
+    margin-left: 4px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--color-accent);
+    color: #fff;
+    font-size: 0.75rem;
+  }
+}
+
+.alert {
+  margin-bottom: 16px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.clear {
+  border: 0;
+  background: none;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.reservation {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+
+  h3 {
+    margin: 6px 0 4px;
+    font-size: 1.15rem;
+  }
+
+  p {
+    margin: 0 0 4px;
+  }
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.customer {
+  font-size: 0.9rem;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.total {
+  font-size: 1.2rem;
+  color: var(--color-accent);
+}
+
+.small {
+  font-size: 0.82rem;
+}
+
+.block {
+  display: block;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th,
+td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+th {
+  background: var(--color-bg);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+}
+
+tr.inactive td {
+  color: var(--color-muted);
+}
+
+td a {
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.nowrap {
+  white-space: nowrap;
+
+  .btn + .btn {
+    margin-left: 6px;
+  }
+}
+
+.bar {
+  width: 120px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--color-border);
+  overflow: hidden;
+
+  span {
+    display: block;
+    height: 100%;
+    background: var(--color-success);
+  }
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .reservation {
+    flex-direction: column;
+  }
+
+  .side {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.handled {
+  margin-top: 4px;
+}
+
+.details {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.reject {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.reject-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.team {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.member {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px 14px;
+  padding: 18px;
+
+  &.me {
+    border-color: var(--color-accent);
+  }
+
+  .facts {
+    grid-column: 1 / -1;
+  }
+
+  > div {
+    min-width: 0;
+  }
+
+  .block {
+    overflow-wrap: anywhere;
+  }
+
+  .badge {
+    margin-left: 6px;
+  }
+}
+
+.block-badge {
+  display: table;
+  margin-top: 4px;
+}
+
+.decide-by {
+  margin: 0 0 6px;
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+.offer {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-dark);
+}
+
+.waiting {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.add-date {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .input {
+    padding: 6px 10px;
+  }
+}

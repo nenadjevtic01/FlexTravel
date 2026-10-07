@@ -1,0 +1,8 @@
+<span class="meter" [class]="tone()" [attr.title]="'Safety ' + level() + '/5'">
+  @for (on of segments(); track $index) {
+    <i [class.on]="on"></i>
+  }
+  @if (showLabel()) {
+    <span class="label">{{ label() }}</span>
+  }
+</span>

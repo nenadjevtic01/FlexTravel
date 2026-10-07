@@ -1,0 +1,82 @@
+<div class="container page">
+  <header class="page-header">
+    <span class="eyebrow">Before you go</span>
+    <h1>Countries</h1>
+    <p class="muted">Key facts, visa requirements and a safety rating for every country.</p>
+  </header>
+
+  @if (countries.error() ?? continents.error(); as error) {
+    <div class="state">
+      <h3>Countries could not be loaded</h3>
+      <p>{{ errorText(error) }}</p>
+    </div>
+  } @else if (countries.hasValue() && continents.hasValue()) {
+    <div class="chips filter">
+      <button class="chip" [class.active]="continentId() === null" (click)="continentId.set(null)">
+        All continents
+      </button>
+      @for (continent of continents.value(); track continent.id) {
+        <button
+          class="chip"
+          [class.active]="continentId() === continent.id"
+          (click)="continentId.set(continent.id)"
+        >
+          {{ continent.name }} <span class="count">{{ continent.countriesCount }}</span>
+        </button>
+      }
+    </div>
+
+    @for (group of groups(); track group.continent.id) {
+      <section class="group">
+        <h2>{{ group.continent.name }}</h2>
+        <div class="grid">
+          @for (country of group.countries; track country.id) {
+            <article class="card country">
+              <div class="card-body">
+                <div class="head">
+                  <h3>{{ country.name }}</h3>
+                  @if (country.safety) {
+                    <app-safety-meter [level]="country.safety.level" [showLabel]="true" />
+                  }
+                </div>
+
+                <dl class="facts">
+                  <dt>Capital</dt>
+                  <dd>{{ country.capitalCity ?? '—' }}</dd>
+                  <dt>Language</dt>
+                  <dd>{{ country.language ?? '—' }}</dd>
+                  <dt>Currency</dt>
+                  <dd>{{ country.currency ?? '—' }}</dd>
+                  <dt>Population</dt>
+                  <dd>{{ formatNumber(country.population) }}</dd>
+                  <dt>Area</dt>
+                  <dd>{{ formatNumber(country.totalArea) }} km²</dd>
+                </dl>
+
+                @if (country.visa; as visa) {
+                  <details>
+                    <summary>
+                      🛂 {{ visa.type }}
+                      <span class="muted">· {{ visa.duration }}</span>
+                    </summary>
+                    <p>{{ visa.requirements }}</p>
+                    @if (country.safety) {
+                      <p><strong>Safety:</strong> {{ country.safety.advices }}</p>
+                    }
+                  </details>
+                }
+              </div>
+
+              <button class="footer-link" (click)="showDestinations(country)">
+                {{ country.destinationsCount }}
+                {{ country.destinationsCount === 1 ? 'destination' : 'destinations' }} →
+              </button>
+            </article>
+          }
+        </div>
+      </section>
+    }
+  } @else {
+    <div class="skeleton" style="height: 320px"></div>
+  }
+</div>

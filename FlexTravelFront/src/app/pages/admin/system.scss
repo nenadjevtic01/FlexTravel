@@ -1,0 +1,54 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+h3 {
+  margin: 0 0 4px;
+}
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.head p {
+  max-width: 720px;
+}
+.small {
+  font-size: 0.85rem;
+}
+.table-wrap {
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+th,
+td {
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  white-space: nowrap;
+}
+th {
+  color: var(--color-muted);
+  font-weight: 600;
+}
+.failed td {
+  color: var(--color-danger);
+  white-space: normal;
+}
+.rate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.rate .input {
+  width: 140px;
+}

@@ -1,0 +1,184 @@
+<div class="container page">
+  <header class="page-header">
+    <span class="eyebrow">Side by side</span>
+    <h1>Compare trips</h1>
+    <p class="muted">
+      Pick up to {{ max }} trips with the “Compare” button on a trip card or trip page.
+    </p>
+  </header>
+
+  @if (compare.count() === 0) {
+    <div class="state">
+      <h3>No trips to compare yet</h3>
+      <a class="btn btn-primary" routerLink="/trips">Browse trips</a>
+    </div>
+  } @else if (trips.isLoading() && !trips.hasValue()) {
+    <div class="skeleton" style="height: 480px"></div>
+  } @else {
+    <div class="actions">
+      <span class="muted">{{ columns().length }} of {{ max }} trips</span>
+      @if (columns().length < max) {
+        <a class="btn btn-secondary btn-sm" routerLink="/trips">+ Add a trip</a>
+      }
+      <button class="btn btn-secondary btn-sm" (click)="compare.clear()">Clear all</button>
+    </div>
+
+    <div class="table-wrap">
+      <table [style.--cols]="columns().length">
+        <thead>
+          <tr>
+            <th scope="col"><span class="sr-only">Property</span></th>
+            @for (c of columns(); track c.trip.id) {
+              <th scope="col">
+                <div class="trip-head">
+                  @if (c.trip.destination.images[0]; as img) {
+                    <img [src]="imageUrl(img.src)" [alt]="img.alt" />
+                  }
+                  <span class="eyebrow"
+                    >{{ c.trip.destination.name }} · {{ c.trip.destination.country }}</span
+                  >
+                  <a [routerLink]="['/trips', c.trip.id]">{{ c.trip.name }}</a>
+                  <button class="remove" (click)="compare.remove(c.trip.id)">Remove</button>
+                </div>
+              </th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Price from</th>
+            @for (c of columns(); track c.trip.id) {
+              <td [class.best]="c.priceFrom === bestPrice()">
+                <strong class="price">{{ formatMoney(c.priceFrom) }}</strong>
+                <span class="muted">/ person</span>
+                @if (c.trip.offer) {
+                  <span class="badge offer">{{
+                    offerLabel(c.trip.offer, c.trip.offerPercent)
+                  }}</span>
+                }
+              </td>
+            }
+          </tr>
+          <tr>
+            <th scope="row">Price per night</th>
+            @for (c of columns(); track c.trip.id) {
+              <td [class.best]="perNight(c) === bestPerNight()">{{ formatMoney(perNight(c)) }}</td>
+            }
+          </tr>
+          <tr>
+            <th scope="row">Dates</th>
+            @for (c of columns(); track c.trip.id) {
+              <td>
+                {{ formatDateRange(c.trip.startDate, c.trip.endDate) }} · {{ c.trip.nights }} nights
+              </td>
+            }
+          </tr>
+          <tr>
+            <th scope="row">Transport</th>
+            @for (c of columns(); track c.trip.id) {
+              <td>{{ transportIcon(c.trip.transport) }} {{ c.trip.transport }}</td>
+            }
+          </tr>
+          <tr>
+            <th scope="row">Agency</th>
+            @for (c of columns(); track c.trip.id) {
+              <td>
+                <a [routerLink]="['/agencies', c.trip.agency.id]">{{ c.trip.agency.name }}</a>
+              </td>
+            }
+          </tr>
+          <tr>
+            <th scope="row">Rating</th>
+            @for (c of columns(); track c.trip.id) {
+              <td [class.best]="c.trip.rating?.average && c.trip.rating?.average === bestRating()">
+                @if (c.trip.rating?.count) {
+                  ★ <strong>{{ c.trip.rating!.average?.toFixed(1) }}</strong>
+                  <span class="muted">({{ c.trip.rating!.count }})</span>
+                  @for (cat of c.trip.ratingDetails?.categories ?? []; track cat.name) {
+                    <span class="muted small block"
+                      >{{ cat.name }} {{ cat.average?.toFixed(1) }}</span
+                    >
+                  }
+                } @else {
+                  <span class="muted">No reviews yet</span>
+                }
+              </td>
+            }
+          </tr>
+          <tr>
+            <th scope="row">Hotels</th>
+            @for (c of columns(); track c.trip.id) {
+              <td>{{ c.hotels }}</td>
+            }
+          </tr>
+          <tr>
+            <th scope="row">Meals included</th>
+            @for (c of columns(); track c.trip.id) {
+              <td>{{ c.mealDays ? 'on ' + c.mealDays + ' days of the program' : 'not listed' }}</td>
+            }
+          </tr>
+          <tr>
+            <th scope="row">Program</th>
+            @for (c of columns(); track c.trip.id) {
+              <td>{{ c.trip.itinerary.length }} described days · {{ c.sights }} sights</td>
+            }
+          </tr>
+          <tr>
+            <th scope="row">Extras</th>
+            @for (c of columns(); track c.trip.id) {
+              <td>
+                @for (e of c.trip.extras; track e.id) {
+                  <span class="block small">
+                    {{ extraIcon(e.kind) }} {{ e.name }} · {{ formatMoney(e.price)
+                    }}{{ e.perPerson ? '/p' : '' }}
+                  </span>
+                } @empty {
+                  <span class="muted">None</span>
+                }
+              </td>
+            }
+          </tr>
+          <tr>
+            <th scope="row">Free cancellation</th>
+            @for (c of columns(); track c.trip.id) {
+              <td>until {{ formatDate(c.trip.freeCancellationUntil) }}</td>
+            }
+          </tr>
+          <tr>
+            <th scope="row">Children</th>
+            @for (c of columns(); track c.trip.id) {
+              <td [class.best]="c.trip.childDiscountPercent === bestChild() && bestChild() > 0">
+                −{{ c.trip.childDiscountPercent }}% on the trip price
+              </td>
+            }
+          </tr>
+          <tr>
+            <th scope="row">Seats left</th>
+            @for (c of columns(); track c.trip.id) {
+              <td [class.low]="c.trip.seatsLeft <= 10">
+                {{ c.trip.seatsLeft }} of {{ c.trip.capacity }}
+              </td>
+            }
+          </tr>
+          <tr>
+            <th scope="row"><span class="sr-only">Book</span></th>
+            @for (c of columns(); track c.trip.id) {
+              <td>
+                <a class="btn btn-primary btn-sm" [routerLink]="['/trips', c.trip.id]"
+                  >View &amp; book</a
+                >
+              </td>
+            }
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    @if (missing() > 0) {
+      <p class="muted small">
+        {{ missing() }} saved {{ missing() === 1 ? 'trip is' : 'trips are' }} no longer on sale and
+        {{ missing() === 1 ? 'was' : 'were' }} left out.
+      </p>
+    }
+    <p class="muted small"><span class="best-key"></span> best value in the row</p>
+  }
+</div>

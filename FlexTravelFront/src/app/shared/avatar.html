@@ -1,0 +1,18 @@
+@if (src() && !failed()) {
+  <img
+    [src]="url()"
+    [alt]="alt()"
+    [style.width.px]="size()"
+    [style.height.px]="size()"
+    (error)="failed.set(true)"
+  />
+} @else {
+  <span
+    class="initial"
+    [style.width.px]="size()"
+    [style.height.px]="size()"
+    [style.font-size.px]="size() * 0.45"
+    aria-hidden="true"
+    >{{ initial() }}</span
+  >
+}

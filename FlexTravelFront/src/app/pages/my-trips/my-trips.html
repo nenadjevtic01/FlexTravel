@@ -1,0 +1,189 @@
+<div class="container page">
+  <header class="page-header">
+    <span class="eyebrow">Your bookings</span>
+    <h1>My trips</h1>
+  </header>
+
+  @if (!auth.canBook()) {
+    <div class="card state">
+      <h3>Sign in with a customer account</h3>
+      <p>Your reservations are shown here after you book a trip.</p>
+      <a class="btn btn-primary" routerLink="/login" [queryParams]="{ returnUrl: '/my-trips' }"
+        >Sign in</a
+      >
+    </div>
+  } @else {
+    @if (booked(); as code) {
+      <div class="alert alert-success banner">
+        Reservation <strong>{{ code }}</strong> received. The agency will confirm it soon and you
+        can follow its status here.
+      </div>
+    }
+
+    @if (waitlist.hasValue() && waitlist.value().length) {
+      <section class="waitlist">
+        <h2>On the waitlist</h2>
+        @for (w of waitlist.value(); track w.id) {
+          <div class="card waiting" [class.free]="w.canBookNow">
+            <div>
+              <strong
+                ><a [routerLink]="['/trips', w.tripId]">{{ w.tripName }}</a></strong
+              >
+              <span class="muted small">
+                {{ formatDateRange(w.startDate, w.endDate) }} ·
+                {{ formatTravelers(w.adults, w.children) }}
+              </span>
+            </div>
+            @if (w.canBookNow) {
+              <span class="badge badge-success">{{ w.seatsLeft }} seats free</span>
+              <a class="btn btn-primary btn-sm" [routerLink]="['/trips', w.tripId]">Book now</a>
+            } @else {
+              <span class="badge">Position {{ w.position }}</span>
+            }
+            <button class="btn btn-secondary btn-sm" (click)="leaveWaitlist(w)">Leave</button>
+          </div>
+        }
+      </section>
+    }
+
+    <div class="chips filter">
+      @for (s of statuses; track s) {
+        <button class="chip" [class.active]="status() === s" (click)="setStatus(s)">
+          {{ s === '' ? 'All' : s === 'Pending' ? 'Awaiting confirmation' : s }}
+        </button>
+      }
+    </div>
+
+    @if (actionError(); as error) {
+      <p class="alert">{{ error }}</p>
+    }
+
+    @if (reservations.error(); as error) {
+      <p class="alert">{{ errorText(error) }}</p>
+    } @else if (reservations.hasValue()) {
+      @let result = reservations.value();
+      @for (r of result.items; track r.id) {
+        <article class="card reservation" [class.highlight]="r.code === booked()">
+          @if (r.image) {
+            <img [src]="imageUrl(r.image)" [alt]="r.destination" />
+          }
+          <div class="body">
+            <div class="top">
+              <div>
+                <span class="eyebrow">{{ r.destination }} · {{ r.country }}</span>
+                <h3>
+                  <a [routerLink]="['/trips', r.tripId]">{{ r.tripName }}</a>
+                </h3>
+                <p class="muted">
+                  📅 {{ formatDateRange(r.startDate, r.endDate) }} · 🏨 {{ r.accommodation }} · 🏢
+                  {{ r.agency }}
+                </p>
+              </div>
+              <div class="badges">
+                <app-status-badge [status]="r.status" />
+                @if (r.status === 'Pending' && r.decideBy) {
+                  <span
+                    class="badge"
+                    title="If the agency does not decide by then, the reservation expires"
+                    >⏳ decision by {{ formatDate(r.decideBy) }}</span
+                  >
+                }
+                @if ((r.status !== 'Rejected' && r.status !== 'Expired') || r.payment.paid) {
+                  <app-payment-badge [payment]="r.payment" />
+                }
+                @if (r.unreadMessages) {
+                  <a class="badge badge-danger" [routerLink]="['/reservations', r.id]"
+                    >💬 {{ r.unreadMessages }} new</a
+                  >
+                }
+              </div>
+            </div>
+
+            <div class="details">
+              <div>
+                <span class="label">Travelers</span>
+                {{ formatTravelers(r.adults, r.children) }}
+              </div>
+              <div>
+                <span class="label">Rooms</span>
+                @for (room of r.rooms; track room.roomId; let last = $last) {
+                  {{ room.count }} × {{ room.roomType }}{{ last ? '' : ', ' }}
+                }
+              </div>
+              <div>
+                <span class="label">Total</span>
+                <strong class="total">{{ formatMoney(r.totalPrice) }}</strong>
+                @if (r.discountTotal > 0) {
+                  <span class="saved">saved {{ formatMoney(r.discountTotal) }}</span>
+                }
+              </div>
+              <div>
+                <span class="label">Reservation</span>
+                <code>{{ r.code }}</code> · {{ formatDate(r.createdAt) }}
+              </div>
+            </div>
+
+            @if (r.note) {
+              <p class="note muted">“{{ r.note }}”</p>
+            }
+
+            @if (r.handledBy) {
+              <p class="muted small handled">
+                {{ r.status === 'Rejected' ? 'Rejected' : 'Confirmed' }} by {{ r.handledBy }},
+                {{ r.agency }}
+              </p>
+            }
+
+            <div class="actions">
+              <a class="btn btn-primary btn-sm" [routerLink]="['/reservations', r.id]"
+                >View details</a
+              >
+              @if (r.canReview) {
+                <a
+                  class="btn btn-secondary btn-sm"
+                  [routerLink]="['/reservations', r.id]"
+                  fragment="review"
+                  >★ Write a review</a
+                >
+              } @else if (r.review) {
+                <span class="reviewed small">
+                  Your review <app-stars [value]="r.review.tripRating" />
+                  @if (r.review.isHidden) {
+                    <span class="muted">(hidden)</span>
+                  }
+                </span>
+              }
+              @if (r.canCancel) {
+                <button
+                  class="btn btn-secondary btn-sm"
+                  [disabled]="busyId() === r.id"
+                  (click)="cancel(r)"
+                >
+                  {{ busyId() === r.id ? 'Cancelling…' : 'Cancel reservation' }}
+                </button>
+              } @else if ((r.status === 'Pending' || r.status === 'Confirmed') && !hasEnded(r)) {
+                <span class="muted small"
+                  >Departure is close. Contact {{ r.agency }} to change or cancel.</span
+                >
+              }
+            </div>
+          </div>
+        </article>
+      } @empty {
+        <div class="state">
+          <h3>No reservations yet</h3>
+          <p>Find a trip you like and book it in a few clicks.</p>
+          <a class="btn btn-primary" routerLink="/trips">Browse trips</a>
+        </div>
+      }
+
+      <app-pagination
+        [page]="result.currentPage"
+        [pagesCount]="result.pagesCount"
+        (pageChange)="page.set($event)"
+      />
+    } @else {
+      <div class="skeleton" style="height: 200px"></div>
+    }
+  }
+</div>

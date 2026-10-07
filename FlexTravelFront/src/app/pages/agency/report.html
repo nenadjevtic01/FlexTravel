@@ -1,0 +1,191 @@
+<div class="toolbar">
+  <label class="field year">
+    <span>Year</span>
+    <select class="select" (change)="year.set(+$any($event.target).value)">
+      @for (y of years(); track y) {
+        <option [value]="y" [selected]="y === report.value()?.year">{{ y }}</option>
+      }
+    </select>
+  </label>
+  @if (report.hasValue()) {
+    <button class="btn btn-secondary btn-sm" (click)="exportCsv()">⬇ Export CSV</button>
+  }
+</div>
+
+@if (report.error()) {
+  <p class="alert">The report could not be loaded.</p>
+} @else if (report.hasValue()) {
+  @let r = report.value();
+  <div class="tiles">
+    <div class="card tile">
+      <span class="muted">Sales</span><strong>{{ euro(r.totals.sales) }}</strong>
+      <span class="muted small"
+        >{{ r.totals.confirmed }} confirmed · avg {{ euro(r.totals.averageReservation) }}</span
+      >
+    </div>
+    <div class="card tile">
+      <span class="muted">Collected</span><strong>{{ euro(r.totals.collected) }}</strong>
+      <span class="muted small">payments minus refunds</span>
+    </div>
+    <div class="card tile">
+      <span class="muted">Travelers</span><strong>{{ r.totals.travelers }}</strong>
+      <span class="muted small">{{ r.totals.reservations }} reservations made</span>
+    </div>
+    <div class="card tile">
+      <span class="muted">Confirmed</span><strong>{{ r.totals.confirmationRate }}%</strong>
+      <span class="muted small">of decided reservations</span>
+    </div>
+    <div class="card tile">
+      <span class="muted">Cancelled</span><strong>{{ r.totals.cancellationRate }}%</strong>
+      <span class="muted small"
+        >{{ r.totals.cancelled }} cancelled · {{ r.totals.expired }} expired ·
+        {{ r.totals.rejected }} rejected</span
+      >
+    </div>
+    <div class="card tile">
+      <span class="muted">Avg. occupancy</span><strong>{{ r.totals.averageOccupancy }}%</strong>
+      <span class="muted small"
+        >departures in {{ r.year }} · extras {{ euro(r.totals.extrasSales) }}</span
+      >
+    </div>
+  </div>
+
+  <section class="card card-body">
+    <div class="chart-head">
+      <h3>Sales and payments by month</h3>
+      <span class="legend">
+        <span><i class="swatch s1"></i>Sales</span>
+        <span><i class="swatch s2"></i>Collected</span>
+      </span>
+      <button class="link" (click)="showTable.set(!showTable())">
+        {{ showTable() ? 'Show chart' : 'Show as table' }}
+      </button>
+    </div>
+
+    @if (!showTable()) {
+      <div class="chart" role="img" [attr.aria-label]="summary()">
+        <div class="ticks" aria-hidden="true">
+          <span>{{ euro(axisMax()) }}</span>
+          <span>{{ euro(axisMax() / 2) }}</span>
+          <span>€0</span>
+        </div>
+        <div class="plot">
+          @for (m of months(); track m.month; let i = $index) {
+            <div
+              class="month"
+              tabindex="0"
+              (mouseenter)="active.set(i)"
+              (mouseleave)="active.set(null)"
+              (focus)="active.set(i)"
+              (blur)="active.set(null)"
+            >
+              <span class="bars">
+                <span class="bar s1" [style.height.%]="m.salesHeight"></span>
+                <span class="bar s2" [style.height.%]="m.collectedHeight"></span>
+              </span>
+              <span class="axis-label">{{ m.short }}</span>
+              @if (active() === i) {
+                <span class="tooltip" [class.left]="i > 8" [class.right]="i < 3">
+                  <strong>{{ m.long }} {{ r.year }}</strong>
+                  <span><i class="swatch s1"></i>Sales {{ euro(m.sales) }}</span>
+                  <span><i class="swatch s2"></i>Collected {{ euro(m.collected) }}</span>
+                  <span>{{ m.reservations }} reservations · {{ m.travelers }} travelers</span>
+                </span>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Reservations</th>
+              <th>Travelers</th>
+              <th>Sales</th>
+              <th>Collected</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of months(); track m.month) {
+              <tr>
+                <td>{{ m.long }}</td>
+                <td>{{ m.reservations }}</td>
+                <td>{{ m.travelers }}</td>
+                <td>{{ euro(m.sales) }}</td>
+                <td>{{ euro(m.collected) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  <div class="two">
+    <section class="card card-body">
+      <h3>Occupancy of departures in {{ r.year }}</h3>
+      <p class="muted small">Confirmed seats of the capacity.</p>
+      <ul class="hbars">
+        @for (d of r.departures; track d.tripId) {
+          <li [title]="d.seatsSold + ' of ' + d.capacity + ' seats · ' + euro(d.sales)">
+            <span class="name">
+              <a [routerLink]="['/agency/trips', d.tripId, 'passengers']">{{ d.name }}</a>
+              <small class="muted">{{ formatDate(d.startDate) }}</small>
+            </span>
+            <span class="track"><span class="fill s1" [style.width.%]="d.occupancy"></span></span>
+            <span class="value">{{ d.occupancy }}%</span>
+          </li>
+        } @empty {
+          <li class="muted">No departures in {{ r.year }}.</li>
+        }
+      </ul>
+    </section>
+
+    <section class="card card-body">
+      <h3>Best-selling destinations</h3>
+      <p class="muted small">Confirmed reservations made in {{ r.year }}.</p>
+      <ul class="hbars">
+        @for (d of r.destinations; track d.destination) {
+          <li [title]="d.reservations + ' reservations · ' + d.travelers + ' travelers'">
+            <span class="name"
+              >{{ d.destination }} <small class="muted">{{ d.country }}</small></span
+            >
+            <span class="track"
+              ><span class="fill s1" [style.width.%]="share(d.sales, maxDestination())"></span
+            ></span>
+            <span class="value">{{ euro(d.sales) }}</span>
+          </li>
+        } @empty {
+          <li class="muted">No confirmed reservations yet.</li>
+        }
+      </ul>
+
+      @if (r.extras.length) {
+        <h3 class="extras-title">Extras sold</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Extra</th>
+              <th>Sold</th>
+              <th>Sales</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of r.extras; track e.name + e.kind) {
+              <tr>
+                <td>{{ e.name }}</td>
+                <td>{{ e.sold }}</td>
+                <td>{{ euro(e.sales) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+  </div>
+} @else {
+  <div class="skeleton" style="height: 420px"></div>
+}
